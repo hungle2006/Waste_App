@@ -76,3 +76,5 @@ Jetson -> Vercel, event `status`:
 - BIN 4: other
 
 Camera không truyền qua Supabase. Sau này dùng MJPEG/WebRTC riêng.
+
+ 
