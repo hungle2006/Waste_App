@@ -3,7 +3,8 @@
 Frontend hiện đại cho robot phân loại rác, sẵn sàng deploy lên Vercel.
 
 ## Tính năng
-- Camera trước / camera sau
+- Một camera robot với khung hình lớn, xem trọn hình và chế độ toàn màn hình
+- Kết nối lại camera khi mất tín hiệu
 - Manual / Auto
 - Tiến / lùi / trái / phải / stop
 - Gắp / thả / arm home
@@ -27,8 +28,10 @@ Copy `.env.example` thành `.env.local` rồi điền:
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 NEXT_PUBLIC_ROBOT_ID=robot_01
-NEXT_PUBLIC_FRONT_CAMERA_URL=
-NEXT_PUBLIC_REAR_CAMERA_URL=
+NEXT_PUBLIC_CAMERA_TRACK_NAME=front_camera
+LIVEKIT_URL=wss://YOUR_LIVEKIT_HOST
+LIVEKIT_API_KEY=YOUR_LIVEKIT_API_KEY
+LIVEKIT_API_SECRET=YOUR_LIVEKIT_API_SECRET
 NEXT_PUBLIC_MODAL_AI_URL=https://leminhhungleminhhung01012006--waste-robot-ai-api.modal.run
 ```
 Không đưa secret/service-role key vào frontend.
@@ -75,6 +78,6 @@ Jetson -> Vercel, event `status`:
 - BIN 3: hazardous
 - BIN 4: other
 
-Camera không truyền qua Supabase. Sau này dùng MJPEG/WebRTC riêng.
+Camera truyền qua LiveKit/WebRTC, không qua Supabase. Jetson publish một video track tên `front_camera` vào room trùng `NEXT_PUBLIC_ROBOT_ID`. Nếu dùng tên track khác, đặt `NEXT_PUBLIC_CAMERA_TRACK_NAME` đúng với tên đó. Frontend chỉ subscribe video track này.
 
- 
+`LIVEKIT_API_KEY` và `LIVEKIT_API_SECRET` chỉ dùng ở API server, không thêm tiền tố `NEXT_PUBLIC_`. Các biến camera URL cũ không còn dùng trong giao diện.
