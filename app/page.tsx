@@ -8,8 +8,8 @@ import { ArrowUp,ArrowDown,ArrowLeft,ArrowRight,Bot,Camera,Maximize,CircleStop,G
 
 type Mode="manual"|"auto";
 type Status={state?:string;label?:string;category?:string;bin?:number;battery?:number;message?:string;center?:number[]};
-const ROBOT_ID=process.env.NEXT_PUBLIC_ROBOT_ID||"robot_01";
-const CAMERA_TRACK_NAME=process.env.NEXT_PUBLIC_CAMERA_TRACK_NAME||"front_camera";
+const ROBOT_ID=process.env.NEXT_PUBLIC_ROBOT_ID?.trim()||"robot_01";
+const CAMERA_TRACK_NAME=process.env.NEXT_PUBLIC_CAMERA_TRACK_NAME?.trim()||"front_camera";
 
 const bins=[
 {id:1,title:"Tái chế",sub:"Chai nhựa · lon kim loại",Icon:Recycle,tone:"emerald"},

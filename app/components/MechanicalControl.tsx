@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { RobotRealtimeClient } from "@/lib/robot-realtime";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleStop,
-  Cpu, Grip, Leaf, Link2, LockKeyhole, PackageOpen, Radio, Recycle, RotateCcw,
+  Cpu, Grip, Leaf, Link2, PackageOpen, Radio, Recycle, RotateCcw,
   Save, Settings2, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
 type Joint = "p1" | "p10" | "p11";
@@ -53,7 +54,6 @@ const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["
 const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40";
 
 export default function MechanicalControl({ active, registerStop, onBinChange, onCommand }: Props) {
-  const [accessKey, setAccessKey] = useState("");
   const [robot, setRobot] = useState<RobotState | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [connected, setConnected] = useState(false);
@@ -66,21 +66,14 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   const [driveHeld, setDriveHeld] = useState("");
   const driveRef = useRef<{ mode: string; epoch: number; speed: number } | null>(null);
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const keyRef = useRef("");
+  const realtimeRef = useRef<RobotRealtimeClient | null>(null);
+  const [brokerOnline, setBrokerOnline] = useState(false);
   const robotRef = useRef<RobotState | null>(null);
   const draftRef = useRef<Record<Joint, number>>(INITIAL);
   const pendingRef = useRef(false);
   const pollingRef = useRef(false);
   const generationRef = useRef(0);
   const dirtyRef = useRef(new Set<Joint>());
-
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/robot/configuration", { cache: "no-store" }).then(r => r.json())
-      .then(data => { if (alive) setConfigured(data.configured === true); })
-      .catch(() => { if (alive) setConfigured(false); });
-    return () => { alive = false; };
-  }, []);
 
   const applyState = useCallback((next: RobotState) => {
     robotRef.current = next;
@@ -98,16 +91,20 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   }, [onBinChange]);
 
   const request = useCallback(async (path: string, payload?: unknown): Promise<RobotState> => {
-    const response = await fetch(`/api/robot/${path}`, {
-      method: payload === undefined ? "GET" : "POST",
-      headers: { "Content-Type": "application/json", "x-robot-access-key": keyRef.current },
-      body: payload === undefined ? undefined : JSON.stringify(payload),
-      cache: "no-store", signal: AbortSignal.timeout(8000),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : data.error || "Không gửi được lệnh");
-    return data as RobotState;
+    if (!realtimeRef.current) throw new Error("Kết nối Supabase chưa sẵn sàng");
+    return await realtimeRef.current.request(path, payload) as RobotState;
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const realtime = new RobotRealtimeClient(next => {
+      if (alive) applyState(next as RobotState);
+    }, (online, hasConfig) => {
+      if (alive) { setBrokerOnline(online); setConfigured(hasConfig); }
+    });
+    realtimeRef.current = realtime; realtime.start();
+    return () => { alive = false; realtime.close(); realtimeRef.current = null; };
+  }, [applyState]);
 
   const mutate = useCallback(async (payload: Payload, path = "command", urgent = false) => {
     if ("command" in payload && (payload.command === "STOP" || payload.command === "XM")) {
@@ -115,7 +112,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
       if (driveTimer.current) clearTimeout(driveTimer.current);
       setDriveHeld("");
     }
-    if (!keyRef.current) { setMessage("Nhập khóa và kết nối bộ điều khiển trước."); return false; }
+    if (!realtimeRef.current) { setMessage("Kết nối Supabase trước."); return false; }
     if (pendingRef.current && !urgent) return false;
     const generation = urgent ? ++generationRef.current : generationRef.current;
     pendingRef.current = true;
@@ -218,7 +215,6 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   }, [applyState, connected, request]);
 
   async function connect() {
-    if (!keyRef.current) { setMessage("Nhập khóa điều khiển trước."); return; }
     if (pendingRef.current) return;
     const generation = ++generationRef.current;
     pendingRef.current = true; setPending(true);
@@ -267,18 +263,13 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
     </div>
     <div className="px-5 pt-5 sm:px-6">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-        <LockKeyhole size={17} className="ml-1 text-slate-400"/>
-        <input aria-label="Khóa điều khiển cơ khí" type="password" autoComplete="off" value={accessKey} placeholder="Khóa điều khiển Python" className="min-h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-500" onChange={e => {
-          releaseDrive();
-          const key = e.target.value; keyRef.current = key; setAccessKey(key); setConnected(false);
-          generationRef.current++; pendingRef.current = false; setPending(false);
-          if (robotRef.current) applyState({ ...robotRef.current, connected: false, fresh: false, hardware: {} });
-        }}/>
-        <button disabled={pending || configured === false} onClick={() => void connect()} className={button}><Link2 size={14}/>Kết nối Python</button>
+        <Radio size={17} className="ml-1 text-emerald-600"/>
+        <div className="min-w-0 flex-1"><div className="text-xs font-semibold">Supabase Realtime</div><div className="mt-0.5 text-[10px] text-slate-500">{brokerOnline ? "Đã kết nối kênh robot · lệnh và trạng thái" : "Đang kết nối kênh robot"}</div></div>
+        <button disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className={button}><Link2 size={14}/>Kết nối Python</button>
         <button disabled={!ready || !robot?.stopped || robot.busy || pending} onClick={() => action("RESUME")} className="btn flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Check size={14}/>Cho phép điều khiển</button>
         <button onClick={() => void mutate({ command: "STOP" }, "command", true)} className="btn flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700"><CircleStop size={15}/>Dừng cơ khí</button>
       </div>
-      <p role="status" className={`mt-2 min-h-5 text-xs ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Bộ điều khiển Python chưa được kết nối với website. Bạn có thể xem và chỉnh giá trị; robot chưa nhận các thao tác này." : message || "Tư thế khởi tạo mặc định: tìm rác phía trước. Kết nối Python để thiết lập robot."}</p>
+      <p role="status" className={`mt-2 min-h-5 text-xs ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Thiếu cấu hình Supabase của app." : message || "Chạy bộ Python Realtime trên máy nối Arduino, rồi bấm Kết nối Python. Camera dùng LiveKit; AI dùng Modal."}</p>
     </div>
     <div className="grid gap-6 px-5 py-5 sm:px-6 xl:grid-cols-[1.1fr_1fr]">
       <div>
