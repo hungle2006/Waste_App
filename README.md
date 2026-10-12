@@ -84,7 +84,7 @@ Camera truyền qua LiveKit/WebRTC, không qua Supabase. Jetson publish một vi
 
 ## Điều khiển cơ khí V3
 
-Chế độ Manual dùng bảng cơ khí riêng: 3 thanh kéo P1/P10/P11; P9/P4 dùng nút riêng, tư thế nhanh và lưu tư thế, mở/đóng kẹp D3, nắp, 4 ngăn rác, D15/D16/D18 và bước chạy 4 motor trong 300 ms. D2/D3 không có thanh kéo. Các thao tác này dùng Python Brain V3 qua API server; camera LiveKit và phần AUTO/DETECT vẫn dùng luồng cũ.
+Chế độ Manual dùng bảng cơ khí riêng: 3 thanh kéo P1/P10/P11; P9/P4 dùng nút riêng, tư thế nhanh và lưu tư thế, mở/đóng kẹp D3, nắp, 4 ngăn rác, D15/D16/D18 và điều khiển Mecanum giữ để chạy, thả để dừng. D2/D3 không có thanh kéo. Các thao tác này dùng Python Brain V3 qua API server; camera LiveKit và phần AUTO/DETECT vẫn dùng luồng cũ.
 
 Thêm ba biến server-only trên Vercel (không dùng NEXT_PUBLIC_):
 
@@ -101,3 +101,12 @@ Chưa cấu hình thì bảng cơ khí báo chưa kết nối và không gửi l
 BIN 1 = tái chế 2350 µs, BIN 2 = hữu cơ 1000 µs, BIN 3 = nguy hiểm 1450 µs, BIN 4 = rác khác 1900 µs. IR thứ hai nối OUT sang Mega D16; PCA P15 là đầu ra PWM. Chọn ngăn chỉ xoay P9, không tự mở nắp/thả rác. Không thêm chu kỳ tự động mới trong bản giao diện này.
 
 Tư thế khởi tạo mặc định là tìm rác phía trước, lấy từ cấu hình SEARCH của Python. Bản Python cũ trước cập nhật này chưa tự khởi tạo; dùng file Python V3 đã cập nhật để có hành vi mới. AUTO/DETECT không thay đổi.
+
+
+## Mecanum V3.1
+
+M1 trước phải: PWM âm tiến; M2 sau trái: PWM âm tiến; M3 sau phải: PWM âm tiến; M4 trước trái: PWM dương tiến. Bố trí con lăn X. Manual có 8 hướng dịch chuyển, 2 hướng quay tại chỗ và 4 hướng cua theo cung khi tiến/lùi. PWM mặc định 20, chỉnh 1–255 bằng ô số. Giữ chuột/cảm ứng hoặc Space/Enter để chạy; thả, mất focus, hủy chạm và chuyển chế độ sẽ dừng.
+
+Client gửi `DRIVE FORWARD/BACK/LEFT/RIGHT/FORWARD_LEFT/FORWARD_RIGHT/BACK_LEFT/BACK_RIGHT/TURN_LEFT/TURN_RIGHT/ARC_FORWARD_LEFT/ARC_FORWARD_RIGHT/ARC_BACK_LEFT/ARC_BACK_RIGHT`, `speed` và `epoch` qua API proxy tới Python. DRIVE LEFT/RIGHT là đi ngang. XM tăng epoch để từ chối lệnh cũ còn trên mạng. Arduino cấp quyền chạy tối đa 500 ms mỗi lệnh; Python giữ heartbeat USB nhưng không tự gia hạn bánh thay trình duyệt. Python kiểm tra drive_protocol=4 và từ chối firmware cũ trước khi thiết lập servo. Cần nạp Arduino mới và thay cả bộ Python, thêm module mecanum.py. Giữ cấu hình robot_config.json đã hiệu chỉnh của bạn.
+
+Đã kiểm tra build và đường truyền app → API proxy → HTTPS Python với phần cứng mô phỏng. Chuyển động thực tế và kết nối website production tới máy robot cần thử trên phần cứng.
