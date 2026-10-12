@@ -5,7 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleSt
   Cpu, Grip, Leaf, Link2, LockKeyhole, PackageOpen, Radio, Recycle, RotateCcw,
   Save, Settings2, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
-type Joint = "p1" | "p10" | "p11" | "p9" | "p4";
+type Joint = "p1" | "p10" | "p11";
 type Pose = "SETUP" | "SEARCH" | "PLACE" | "REAR";
 type Config = {
   limits: Record<string, [number, number]>;
@@ -27,12 +27,10 @@ const JOINTS: { id: Joint; name: string; sub: string; value: number }[] = [
   { id: "p1", name: "Khớp cánh tay S2", sub: "Co / duỗi cánh tay", value: 1300 },
   { id: "p10", name: "Khớp cánh tay S1", sub: "Nâng / hạ cánh tay", value: 950 },
   { id: "p11", name: "Trụ xoay cánh tay", sub: "Xoay trái / phải", value: 1250 },
-  { id: "p9", name: "Xoay thùng phân loại", sub: "Chọn ngăn tiếp nhận rác", value: 1900 },
-  { id: "p4", name: "Nắp thùng rác", sub: "Mở / đóng nắp", value: 500 },
 ];
 const POSES: { id: Pose; title: string; sub: string; command: string }[] = [
   { id: "SETUP", title: "Thiết lập tất cả", sub: "Khởi tạo 7 servo", command: "SETUP ALL" },
-  { id: "SEARCH", title: "Tìm rác phía trước", sub: "Tay sẵn sàng · mở kẹp", command: "POSE SEARCH" },
+  { id: "SEARCH", title: "Tìm rác phía trước", sub: "Tư thế mặc định · mở kẹp", command: "POSE SEARCH" },
   { id: "PLACE", title: "Đưa rác tới thùng", sub: "Giữ trạng thái kẹp", command: "POSE PLACE" },
   { id: "REAR", title: "Quan sát phía sau", sub: "Dừng bánh · chuyển tư thế", command: "POSE REAR" },
 ];
@@ -52,7 +50,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   const [connected, setConnected] = useState(false);
   const [draft, setDraft] = useState<Record<Joint, number>>(INITIAL);
   const [pending, setPending] = useState(false);
-  const [pose, setPose] = useState<Pose>("SETUP");
+  const [pose, setPose] = useState<Pose>("SEARCH");
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const keyRef = useRef("");
@@ -163,7 +161,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
       draftRef.current = { ...INITIAL, ...next.config.poses.SETUP };
       setDraft({ ...draftRef.current });
       setConnected(true); applyState(next);
-      setMessage("Đã kết nối. Nhấn Cho phép điều khiển để mở khóa.");
+      setMessage(next.stopped ? "Đã kết nối. Cho phép điều khiển để robot về tư thế tìm rác phía trước." : "Đã kết nối. Python đang thiết lập tư thế tìm rác phía trước.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không kết nối được"); }
     finally { if (generation === generationRef.current) { pendingRef.current = false; setPending(false); } }
   }
@@ -201,12 +199,13 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
         <button disabled={!ready || !robot?.stopped || robot.busy || pending} onClick={() => action("RESUME")} className="btn flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Check size={14}/>Cho phép điều khiển</button>
         <button onClick={() => void mutate({ command: "STOP" }, "command", true)} className="btn flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700"><CircleStop size={15}/>Dừng cơ khí</button>
       </div>
-      <p role="status" className={`mt-2 min-h-5 text-xs ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Bộ điều khiển Python chưa được kết nối với website. Bạn có thể xem và chỉnh giá trị; robot chưa nhận các thao tác này." : message || "Kết nối Arduino qua Python rồi cho phép điều khiển. Robot không tự chạy khi kết nối."}</p>
+      <p role="status" className={`mt-2 min-h-5 text-xs ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Bộ điều khiển Python chưa được kết nối với website. Bạn có thể xem và chỉnh giá trị; robot chưa nhận các thao tác này." : message || "Tư thế khởi tạo mặc định: tìm rác phía trước. Kết nối Python để thiết lập robot."}</p>
     </div>
     <div className="grid gap-6 px-5 py-5 sm:px-6 xl:grid-cols-[1.1fr_1fr]">
       <div>
         <div className="mb-3 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-bold"><Settings2 size={16} className="text-emerald-600"/>Tư thế cánh tay</h3><button onClick={() => setEditing(v => !v)} aria-expanded={editing} className="flex items-center gap-1 text-xs font-semibold text-emerald-700"><Save size={13}/>Lưu tư thế<ChevronDown size={13}/></button></div>
-        <div className="grid grid-cols-2 gap-2">{POSES.map(p => <button key={p.id} disabled={!canMove} onClick={() => action(p.command)} className={`${button} !block !justify-start !p-3 !text-left ${p.id === "SETUP" ? "!border-emerald-200 !bg-emerald-50" : ""}`}><span className="font-bold">{p.title}</span><span className="mt-1 block text-[10px] font-normal text-slate-500">{p.sub}</span></button>)}</div>
+        <div className="mb-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700"><Check size={13}/>Mặc định: tìm rác phía trước</div>
+        <div className="grid grid-cols-2 gap-2">{POSES.map(p => <button key={p.id} disabled={!canMove} onClick={() => action(p.command)} className={`${button} !block !justify-start !p-3 !text-left ${p.id === "SEARCH" ? "!border-emerald-200 !bg-emerald-50" : ""}`}><span className="font-bold">{p.title}</span><span className="mt-1 block text-[10px] font-normal text-slate-500">{p.sub}</span></button>)}</div>
         {editing && <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-3">
           <p className="text-xs text-slate-600">Lưu các giá trị thanh kéo vào tư thế của Python. Lưu không làm tay chuyển động.</p>
           <div className="mt-3 flex flex-wrap gap-2"><select aria-label="Tư thế cần lưu" value={pose} onChange={e => setPose(e.target.value as Pose)} className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-2 text-xs">{POSES.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select>

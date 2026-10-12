@@ -84,7 +84,7 @@ Camera truyền qua LiveKit/WebRTC, không qua Supabase. Jetson publish một vi
 
 ## Điều khiển cơ khí V3
 
-Chế độ Manual dùng bảng cơ khí riêng: P1/P10/P11/P9/P4, tư thế nhanh và lưu tư thế, mở/đóng kẹp D3, nắp, 4 ngăn rác, D15/D16/D18 và bước chạy 4 motor trong 300 ms. D2/D3 không có thanh kéo. Các thao tác này dùng Python Brain V3 qua API server; camera LiveKit và phần AUTO/DETECT vẫn dùng luồng cũ.
+Chế độ Manual dùng bảng cơ khí riêng: 3 thanh kéo P1/P10/P11; P9/P4 dùng nút riêng, tư thế nhanh và lưu tư thế, mở/đóng kẹp D3, nắp, 4 ngăn rác, D15/D16/D18 và bước chạy 4 motor trong 300 ms. D2/D3 không có thanh kéo. Các thao tác này dùng Python Brain V3 qua API server; camera LiveKit và phần AUTO/DETECT vẫn dùng luồng cũ.
 
 Thêm ba biến server-only trên Vercel (không dùng NEXT_PUBLIC_):
 
@@ -96,6 +96,8 @@ ROBOT_APP_ACCESS_KEY=
 
 Hai khóa cần tối thiểu 24 ký tự. ROBOT_TOKEN trùng khóa trên máy chạy Python V3; người dùng nhập ROBOT_APP_ACCESS_KEY vào bảng cơ khí. Python cần endpoint HTTPS truy cập được từ Vercel; giữ Bearer authentication. Khóa app chỉ nằm trong bộ nhớ trang. Các API command/connect/status/poses đều yêu cầu khóa. configuration chỉ trả boolean, không trả bí mật.
 
-Chưa cấu hình thì bảng cơ khí báo chưa kết nối và không gửi lệnh giả. Kết nối USB bắt đầu ở STOP; Cho phép điều khiển chỉ bỏ khóa, không chạy servo. Emergency Stop gửi dừng qua cả luồng cũ và Python nếu có khóa. Đổi từ Manual sang Auto dừng luồng cơ khí thủ công đang mở trước đó. Các tham số tư thế và giới hạn do Python trả về. Giá trị 500–2500 µs là giới hạn phần mềm, không phải góc đã hiệu chuẩn.
+Chưa cấu hình thì bảng cơ khí báo chưa kết nối và không gửi lệnh giả. Python V3 cập nhật tự thiết lập tư thế SEARCH và toàn bộ servo khi kết nối USB mới. Sau STOP, Cho phép điều khiển sẽ khởi tạo lại SEARCH. Kết nối tới phiên đang dừng không tự bỏ STOP. Emergency Stop gửi dừng qua cả luồng cũ và Python nếu có khóa. Đổi từ Manual sang Auto dừng luồng cơ khí thủ công đang mở trước đó. Các tham số tư thế và giới hạn do Python trả về. Giá trị 500–2500 µs là giới hạn phần mềm, không phải góc đã hiệu chuẩn.
 
 BIN 1 = tái chế 2350 µs, BIN 2 = hữu cơ 1000 µs, BIN 3 = nguy hiểm 1450 µs, BIN 4 = rác khác 1900 µs. IR thứ hai nối OUT sang Mega D16; PCA P15 là đầu ra PWM. Chọn ngăn chỉ xoay P9, không tự mở nắp/thả rác. Không thêm chu kỳ tự động mới trong bản giao diện này.
+
+Tư thế khởi tạo mặc định là tìm rác phía trước, lấy từ cấu hình SEARCH của Python. Bản Python cũ trước cập nhật này chưa tự khởi tạo; dùng file Python V3 đã cập nhật để có hành vi mới. AUTO/DETECT không thay đổi.
