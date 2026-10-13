@@ -231,7 +231,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   }
 
   function editJoint(id: Joint, value: number) {
-    const limits = robot?.config.limits[id] ?? [500, 2500];
+    const limits = robot?.config.limits[id] ?? [500, id === "p1" ? 3500 : 2500];
     if (!Number.isInteger(value) || value < limits[0] || value > limits[1]) return;
     dirtyRef.current.add(id);
     draftRef.current = { ...draftRef.current, [id]: value };
@@ -289,7 +289,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
         </div>}
         <div className="mt-3 rounded-xl bg-slate-50 p-3"><div className="flex items-center justify-between gap-2 text-[11px]"><span className="truncate text-slate-500">{ready ? robot.job : "Tư thế do Python thiết lập và lưu"}</span><span className="font-bold text-emerald-700">{robot?.busy ? `${robot.progress}%` : ready && robot.stopped ? "ĐANG KHÓA" : ""}</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${robot?.progress ?? 0}%` }}/></div></div>
         <div className="mt-4 divide-y divide-slate-100">{JOINTS.map(j => {
-          const [min, max] = robot?.config.limits[j.id] ?? [500, 2500];
+          const [min, max] = robot?.config.limits[j.id] ?? [500, j.id === "p1" ? 3500 : 2500];
           const submit = () => { if (canMove) void mutate({ joint: j.id, pulse_us: draftRef.current[j.id] }); };
           return <div key={j.id} className="py-4 first:pt-1">
             <div className="mb-2.5 flex items-center justify-between gap-3"><div className="flex items-center gap-2.5"><span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-600">{j.id.toUpperCase()}</span><div><label htmlFor={`mechanical-${j.id}`} className="text-[13px] font-semibold">{j.name}</label><div className="text-[10px] text-slate-400">{j.sub}</div></div></div><div className="flex items-center gap-1.5"><input aria-label={`Xung ${j.name}`} type="number" min={min} max={max} step={1} value={draft[j.id]} onChange={e => editJoint(j.id, Number(e.target.value))} className="w-[76px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-emerald-700 outline-none focus:border-emerald-500"/><span className="text-[10px] text-slate-400">µs</span></div></div>
@@ -297,7 +297,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
             <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400"><span>{min} µs</span><span className="text-slate-500">Đã nhận: <span className="font-semibold">{acknowledged(j.id)}</span></span><button disabled={!canMove} onClick={submit} className="rounded-lg border border-slate-200 px-2.5 py-1 font-semibold text-emerald-700 disabled:opacity-35">Gửi</button><span>{max} µs</span></div>
           </div>;
         })}</div>
-        <p className="mt-2 text-[10px] leading-relaxed text-slate-400">500–2500 µs là giới hạn phần mềm. Xung đã nhận không phải góc đo thực tế. Khớp nối và càng kẹp được điều khiển qua tư thế và nút riêng.</p>
+        <p className="mt-2 text-[10px] leading-relaxed text-slate-400">S2 (P1): 500–3500 µs. Các khớp khác: 500–2500 µs. Xung đã nhận không phải góc đo thực tế. Khớp nối và càng kẹp được điều khiển qua tư thế và nút riêng.</p>
       </div>
       <div className="space-y-5">
         <div className="rounded-2xl border border-slate-200 p-4"><h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Grip size={16} className="text-emerald-600"/>Càng kẹp</h3><div className="grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("GRIP OPEN")} className="btn flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl bg-emerald-600 text-xs font-bold text-white disabled:opacity-40"><PackageOpen size={19}/>Mở càng kẹp<span className="text-[10px] font-normal opacity-70">{robot?.config.grip.open ?? 600} µs</span></button><button disabled={!canMove} onClick={() => action("GRIP CLOSE")} className={`${button} !min-h-[64px] !flex-col`}><Grip size={19}/>Đóng càng kẹp<span className="text-[10px] font-normal text-slate-400">{robot?.config.grip.close ?? 1400} µs</span></button></div></div>
