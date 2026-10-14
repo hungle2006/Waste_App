@@ -17,6 +17,7 @@ type Config = {
 type RobotState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean;
   simulation: boolean; epoch: number; job: string; progress: number; auto_rear: boolean;
+  auto_running?: boolean;
   hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number> };
   config: Config; log: { time: string; text: string }[];
 };
@@ -139,7 +140,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   const startDrive = (mode: string) => {
     const current = robotRef.current;
     if (driveRef.current || pendingRef.current || !active || !connected || !current?.connected ||
-        !current.fresh || current.stopped || current.busy || current.auto_rear) return;
+        !current.fresh || current.stopped || current.busy || current.auto_running || current.auto_rear) return;
     const session = { mode, epoch: current.epoch, speed };
     driveRef.current = session;
     setDriveHeld(mode);
@@ -240,8 +241,8 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
 
   const ready = connected && robot?.connected && robot.fresh;
   const moving = Boolean(robot?.hardware.motors?.some(pwm => pwm !== 0));
-  const canMove = Boolean(active && ready && !robot?.stopped && !robot?.busy && !pending && !moving && !driveHeld);
-  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !pending && !robot?.auto_rear);
+  const canMove = Boolean(active && ready && !robot?.stopped && !robot?.busy && !robot?.auto_running && !pending && !moving && !driveHeld);
+  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !robot?.auto_running && !pending && !robot?.auto_rear);
   const hardware = ready ? robot.hardware : {};
   const acknowledged = (id: string) => hardware.joints?.[id] == null ? "Chưa gửi" : `${hardware.joints[id]} µs`;
   const action = (command: string) => { void mutate({ command }); };
@@ -293,7 +294,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
           const submit = () => { if (canMove) void mutate({ joint: j.id, pulse_us: draftRef.current[j.id] }); };
           return <div key={j.id} className="py-4 first:pt-1">
             <div className="mb-2.5 flex items-center justify-between gap-3"><div className="flex items-center gap-2.5"><span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-600">{j.id.toUpperCase()}</span><div><label htmlFor={`mechanical-${j.id}`} className="text-[13px] font-semibold">{j.name}</label><div className="text-[10px] text-slate-400">{j.sub}</div></div></div><div className="flex items-center gap-1.5"><input aria-label={`Xung ${j.name}`} type="number" min={min} max={max} step={1} value={draft[j.id]} onChange={e => editJoint(j.id, Number(e.target.value))} className="w-[76px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-emerald-700 outline-none focus:border-emerald-500"/><span className="text-[10px] text-slate-400">µs</span></div></div>
-            <input id={`mechanical-${j.id}`} type="range" min={min} max={max} step={10} value={draft[j.id]} disabled={Boolean(robot?.busy || pending)} onChange={e => editJoint(j.id, Number(e.target.value))} onPointerUp={submit} onKeyUp={e => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) submit(); }} className="h-5 w-full cursor-pointer accent-emerald-600 disabled:opacity-50"/>
+            <input id={`mechanical-${j.id}`} type="range" min={min} max={max} step={10} value={draft[j.id]} disabled={Boolean(robot?.busy || robot?.auto_running || pending)} onChange={e => editJoint(j.id, Number(e.target.value))} onPointerUp={submit} onKeyUp={e => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) submit(); }} className="h-5 w-full cursor-pointer accent-emerald-600 disabled:opacity-50"/>
             <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400"><span>{min} µs</span><span className="text-slate-500">Đã nhận: <span className="font-semibold">{acknowledged(j.id)}</span></span><button disabled={!canMove} onClick={submit} className="rounded-lg border border-slate-200 px-2.5 py-1 font-semibold text-emerald-700 disabled:opacity-35">Gửi</button><span>{max} µs</span></div>
           </div>;
         })}</div>
@@ -308,7 +309,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
         <div className="rounded-2xl border border-slate-200 p-4"><div className="mb-3 flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-bold"><Radio size={16} className="text-emerald-600"/>Cảm biến cơ khí</h3><span className="text-[10px] text-slate-400">LOW = phát hiện</span></div><div className="grid grid-cols-2 gap-2">{[["D19", "IR gắp vật"], ["D18", "Thùng rác"]].map(([pin, title]) => {
           const val = hardware.sensors?.[pin];
           return <div key={pin} className={`rounded-xl border px-2.5 py-3 ${val === 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50"}`}><div className="text-[10px] font-bold text-slate-400">{title} · {pin}</div><div className={`mt-2 text-[11px] font-semibold ${val === 0 ? "text-emerald-700" : "text-slate-600"}`}>{val === 0 ? "Có vật" : val === 1 ? "Không phát hiện" : "Chưa có dữ liệu"}</div></div>;
-        })}</div><p className="mt-2 text-[10px] text-slate-400">OUT của IR nối D19; cảm biến thùng rác nối D18 trên Mega.</p></div>
+        })}</div><p className="mt-2 text-[10px] text-slate-400">OUT của IR nối D19; cảm biến thùng rác nối D18 trên Mega.</p><div className="mt-3 flex items-center justify-between gap-2"><span className="text-xs font-semibold">Tự phân loại phía sau D18</span><button disabled={!canMove} onClick={() => action(robot?.auto_rear ? "AUTO REAR OFF" : "AUTO REAR ON")} className="btn rounded-lg border px-3 py-2 text-xs font-bold text-emerald-700 disabled:opacity-40">{robot?.auto_rear ? "Đang bật · Tắt" : "Bật"}</button></div><p className="mt-2 text-[10px] text-slate-400">D18 → nhìn sau → Modal → xoay ngăn → mở nắp. Đang giữ vật phía trước thì chờ lượt đó hoàn tất.</p></div>
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="mb-3 flex items-start justify-between gap-3"><div><h3 className="text-sm font-bold">Di chuyển Mecanum</h3><p className="mt-1 text-[11px] text-slate-500">Giữ để chạy · thả để dừng</p></div><label className="flex items-center gap-2 text-[11px] text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => { const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n); }} className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center font-bold text-emerald-700"/></label></div>
           <div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(([mode, title, symbol]) => mode === "STOP" ? <button key={mode} aria-label={title} onClick={() => void mutate({ command: "XM" }, "command", true)} className="btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button> : driveButton(mode, title, symbol))}</div>
@@ -316,7 +317,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
           <div className="mt-3 border-t border-slate-100 pt-3"><p className="mb-2 text-[10px] font-semibold text-slate-500">Cua theo cung khi đang tiến / lùi</p><div className="grid grid-cols-2 gap-2">{ARCS.map(([mode, title]) => driveButton(mode, title))}</div></div>
           <div className="mt-3 grid grid-cols-2 gap-2">{WHEELS.map(([name, position, sign], i) => <div key={name} className="rounded-lg bg-slate-50 px-2.5 py-2 text-[10px] text-slate-500"><b className="text-slate-700">{name}</b> · {position}<span className="float-right font-mono font-bold">{hardware.motors?.[i] ?? "—"}</span><span className="mt-1 block text-slate-400">Chiều tiến: PWM {sign}</span></div>)}</div>
           <p className="mt-3 text-[10px] leading-relaxed text-slate-400">Hướng tính theo robot, nhìn từ sau ra trước. Con lăn lắp hình X. Mặc định PWM 20; mất lệnh làm mới thì Arduino dừng bánh sau tối đa 500 ms.</p>
-          {robot?.auto_rear && <p className="mt-2 text-xs text-amber-700">Tắt chế độ tự nhìn sau để di chuyển.</p>}
+          {robot?.auto_rear && <p className="mt-2 text-xs text-amber-700">Tắt “Tự phân loại phía sau D18” để chạy bánh bằng MANUAL.</p>}
         </div>
         <div className="rounded-2xl bg-slate-950 p-4 text-white"><div className="flex items-center justify-between"><h3 className="flex items-center gap-2 text-xs font-semibold"><Cpu size={14} className="text-emerald-400"/>Nhật ký Python</h3><span className="text-[10px] text-slate-500">{hardware.pca === true ? "PCA đã khởi tạo" : ""}</span></div><div className="mt-3 max-h-[120px] space-y-2 overflow-auto text-[11px]">{robot?.log.length ? robot.log.slice(0, 8).map((entry, i) => <div key={`${entry.time}-${i}`} className="flex gap-3"><time className="shrink-0 font-mono text-slate-500">{entry.time}</time><span className="text-slate-300">{entry.text}</span></div>) : <p className="text-slate-500">Chưa có thao tác. Kết nối Python để nhận trạng thái thật.</p>}</div></div>
       </div>
