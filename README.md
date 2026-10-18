@@ -1,97 +1,51 @@
-# Waste Robot Control
+# Waste Robot Control · V3.15
 
-Frontend hiện đại cho robot phân loại rác, sẵn sàng deploy lên Vercel.
+Ứng dụng Next.js của dự án Vercel `waste-app`, ghép với bộ Python V3.15.
 
-## Tính năng
-- Một camera robot với khung hình lớn, xem trọn hình và chế độ toàn màn hình
-- Kết nối lại camera khi mất tín hiệu
-- Manual / Auto
-- Tiến / lùi / trái / phải / stop
-- Gắp / thả / arm home
-- Xoay BIN 1-4 + BIN HOME
-- Emergency Stop
-- AI status
-- Supabase Realtime Broadcast
-- Demo mode nếu chưa cấu hình Supabase
-- Responsive desktop / tablet / mobile
+## Điều khiển
 
-## Chạy local
-```bash
-npm install
+1. Chạy `python main.py` trên máy robot, rồi bấm **Kết nối Python**.
+2. Mở tab AUTO. **Bắt đầu AUTO** chờ ACK của Python.
+3. Nút xanh: Auto điều khiển tay, bánh, ngăn và nắp. Nút đỏ: Python hủy chuyển động Auto đang chờ, phanh bánh, giữ xung servo; camera tiếp tục nhận diện và hiển thị lệnh dự kiến. Bảng cơ khí cho phép điều khiển tay.
+4. Ở chế độ đỏ, **Gắp và nâng vật** chạy chuỗi đã kiểm tra vị trí/cảm biến. **Thả vật vào thùng** dùng ngăn đã xác nhận khi gắp. Chưa đủ điều kiện thì Python từ chối và giữ tại chỗ.
+5. DỪNG/STOP hủy cả Auto và chuỗi gắp/thả; nó khác nút đỏ.
+
+Nút đổi màu theo trạng thái Python đã xác nhận. Chuyển xanh/đỏ không có popup thông báo thành công. Dữ liệu mất liên lạc không được tiếp tục hiển thị là khoảng cách đã đạt. Xung Arduino nhận được không phải phản hồi góc thực tế.
+
+D2: trái 90° = 500 µs, thẳng Oy = 2100 µs, phải 60° = 2500 µs. Không cho góc phải vượt 60°. Xoay tự động theo ảnh cần hiệu chuẩn camera/D2 trong `robot_params.py`; mặc định chưa bật. Giao diện hiển thị điều này. Góc chỉ đổi ở bước gắp và được giữ trong lúc nâng.
+
+## Phát triển và kiểm tra
+
+```sh
+npm ci
+npm test
+npm run build
 npm run dev
 ```
-Mở `http://localhost:3000`.
 
-## Environment
-Copy `.env.example` thành `.env.local` rồi điền:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
-NEXT_PUBLIC_ROBOT_ID=robot_01
-NEXT_PUBLIC_CAMERA_TRACK_NAME=front_camera
-LIVEKIT_URL=wss://YOUR_LIVEKIT_HOST
-LIVEKIT_API_KEY=YOUR_LIVEKIT_API_KEY
-LIVEKIT_API_SECRET=YOUR_LIVEKIT_API_SECRET
-NEXT_PUBLIC_MODAL_AI_URL=https://leminhhungleminhhung01012006--waste-robot-ai-api.modal.run
-```
-Không đưa secret/service-role key vào frontend.
+Bốn kiểm thử React DOM kiểm tra chuyển quyền, D2, xác nhận khoảng cách, gắp/thả, STOP và giữ/nhả bánh. Trạng thái và ACK trong kiểm thử là mô phỏng, không gửi lệnh tới robot. Build kiểm tra TypeScript. Chưa kiểm chứng camera, USB hoặc tải cơ khí thật trong môi trường phát triển.
 
-## Deploy Vercel
-1. Push folder này lên GitHub.
-2. Vercel -> New Project -> Import repository.
-3. Project Settings -> Environment Variables -> thêm các biến `NEXT_PUBLIC_*`.
-4. Deploy.
+## Cấu hình Vercel
 
-## Realtime contract
-Channel: `robot:robot_01`
+Giữ các biến hiện có:
 
-Vercel -> Jetson, event `command`:
-```json
-{"robot_id":"robot_01","type":"move","action":"forward"}
-```
-```json
-{"robot_id":"robot_01","type":"arm","action":"grab"}
-```
-```json
-{"robot_id":"robot_01","type":"bin","action":"rotate","value":3}
-```
-```json
-{"robot_id":"robot_01","type":"mode","action":"auto_start"}
-```
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_ROBOT_ID`
+- `NEXT_PUBLIC_CAMERA_TRACK_NAME` (mặc định `front_camera`)
+- `NEXT_PUBLIC_MODAL_AI_URL`
+- `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`
 
-Jetson -> Vercel, event `status`:
-```json
-{
-  "state":"detected",
-  "label":"battery",
-  "category":"hazardous",
-  "bin":3,
-  "center":[86,164],
-  "battery":91,
-  "message":"Battery detected"
-}
-```
+Secret LiveKit chỉ dùng phía server; API token cấp quyền subscribe, không publish. Không đưa `.env` của robot lên kho mã. Camera qua LiveKit; lệnh và trạng thái qua Supabase. Không có số pin giả định khi robot chưa gửi dữ liệu.
 
-## Mapping BIN
-- BIN 1: recyclable
-- BIN 2: organic
-- BIN 3: hazardous
-- BIN 4: other
+## Giao thức
 
-Camera truyền qua LiveKit/WebRTC, không qua Supabase. Jetson publish một video track tên `front_camera` vào room trùng `NEXT_PUBLIC_ROBOT_ID`. Nếu dùng tên track khác, đặt `NEXT_PUBLIC_CAMERA_TRACK_NAME` đúng với tên đó. Frontend chỉ subscribe video track này.
+Channel `robot:<robot_id>`, event `command`, `type: mechanics`. Các action: `status`, `connect`, `command`, `poses`, mới thêm `operator`.
 
-`LIVEKIT_API_KEY` và `LIVEKIT_API_SECRET` chỉ dùng ở API server, không thêm tiền tố `NEXT_PUBLIC_`. Các biến camera URL cũ không còn dùng trong giao diện.
+Payload operator: `{ "epoch": 3, "command": "MECHANICS OFF" }`. Lệnh hỗ trợ: `AUTO START`, `AUTO STOP`, `MECHANICS ON`, `MECHANICS OFF`, `GRASP`, `RELEASE`.
 
-## Điều khiển cơ khí V3.2 qua Supabase Realtime
+Packet vẫn phải có `robot_id`, `client_id`, `request_id`, `session_id`, `seq`, `issued_at`, `ttl_ms`. Python xác nhận bằng `mechanical_ack`; `mechanical_state` mang snapshot mới. DRIVE có TTL 500 ms; các lệnh khác 8 s. Mỗi `request_id` chỉ thực thi một lần. Phiên/thứ tự/thời hạn chống phát lại; chúng không thay thế quyền truy cập kênh Supabase.
 
-Bảng Manual dùng Supabase trên cùng channel robot:robot_01; không dùng API Python HTTPS hoặc các biến ROBOT_BRIDGE_URL/ROBOT_TOKEN/ROBOT_APP_ACCESS_KEY. Giữ 7 biến Production hiện có: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_ROBOT_ID, NEXT_PUBLIC_MODAL_AI_URL, LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET. Không thay giá trị/phạm vi hoặc mở quyền publish/data LiveKit.
+`state.auto.operator_protocol == 1` xác nhận Python hỗ trợ chức năng mới. Python cũ vẫn xem/điều khiển cơ khí cũ được; nút Auto mới bị khóa kèm hướng dẫn nâng cấp.
 
-Client cơ khí gửi event command, type mechanics và action status/connect/command/poses. Python main.py trả mechanical_ack theo request_id/client_id và mechanical_state có state_seq/session_id. Lệnh có seq, epoch và TTL: DRIVE 500 ms, các lệnh khác 8 s. Lệnh tới trễ, trùng, sai phiên, sai robot hoặc hết hạn bị từ chối. XM tăng epoch; STOP hủy chuỗi tư thế và khóa mới. Mất Supabase làm Python STOP; firmware vẫn có watchdog riêng. App chặn điều khiển khi chưa có trạng thái Arduino mới. Broker online không có nghĩa Arduino online.
-
-API /api/robot/configuration chỉ trả các giá trị NEXT_PUBLIC_ để Python lấy cấu hình, cùng cờ LiveKit và protocol mechanics-realtime-v1. Không trả Secret. Các route HTTP cơ khí cũ trả 410 để client cũ không vô tình đi qua tunnel. Camera vẫn qua LiveKit; /api/livekit-token vẫn cấp token chỉ subscribe.
-
-Python mới trên máy robot mở USB khi bấm Kết nối Python và khởi tạo SEARCH. Các khớp P1/P10/P11, kẹp, nắp và ngăn do Python điều phối. Mecanum: M1 trước phải âm tiến, M2 sau trái âm tiến, M3 sau phải âm tiến, M4 trước trái dương tiến. Bố trí con lăn X; PWM mặc định 20. Có 8 hướng dịch chuyển, 2 hướng quay tại chỗ, 4 hướng cua theo cung. Giữ chuột/cảm ứng/Space/Enter để chạy, thả để dừng. Lưu tư thế không làm robot chuyển động.
-
-Python có viewer nhận cùng camera front_camera trong LiveKit để gửi frame JPEG mới tới Modal /detect khi app phát ai:detect. Nguồn publisher Jetson hiện có cần chạy; worker không publish thêm track. Các sự kiện AUTO/mode/arm/bin cũ trên page.tsx và luồng tự động cũ giữ nguyên, worker cơ khí không thêm chu kỳ tự gắp.
-
-Đã kiểm tra build/type, 58 bài Python/API, React DOM với protocol thực, hai client trên Supabase thật ở topic QA riêng với phần cứng mô phỏng và Modal /health HTTP 200. Chưa xác nhận USB/camera/chuyển động trên robot thật. Hướng dẫn đầy đủ nằm trong bộ Python V3.2 mới.
+`state.auto`: `mechanics_enabled`, `auto_running`, `assist_running`, `distance_ready`, `tof_mm`, `target_fresh`, `planned_commands`, `orientation_enabled`, `orientation_calibrated`. `state.command_trace` chỉ ghi lệnh đã được Arduino ACK. Pin/BIN/nhãn hiển thị theo dữ liệu nhận, không tự giả định.

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RobotRealtimeClient } from "@/lib/robot-realtime";
+import { RobotRealtimeClient, type AutoState, type RobotRealtimeState } from "@/lib/robot-realtime";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleStop,
   Cpu, Grip, Leaf, Link2, PackageOpen, Radio, Recycle, RotateCcw,
   Save, Settings2, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
-type Joint = "p1" | "p10" | "p11";
+type Joint = "p1" | "p10" | "p11" | "d2";
 type Pose = "SETUP" | "SEARCH" | "PLACE" | "REAR";
 type Config = {
   limits: Record<string, [number, number]>;
@@ -17,18 +17,19 @@ type Config = {
 type RobotState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean;
   simulation: boolean; epoch: number; job: string; progress: number; auto_rear: boolean;
-  auto_running?: boolean;
+  auto_running?: boolean; auto?: AutoState; command_trace?: RobotRealtimeState["command_trace"];
   hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number> };
   config: Config; log: { time: string; text: string }[];
 };
-type Payload = { command: string; speed?: number } | { joint: Joint; pulse_us: number } | { name: Pose; values: Record<Joint, number> };
-type Props = { active: boolean; registerStop: (fn: (() => void) | null) => void;
+type Payload = { command: string; speed?: number } | { joint: Joint; pulse_us: number } | { name: Pose; values: Record<"p1" | "p10" | "p11", number> };
+type Props = { active: boolean; autoMode?: boolean; onRobotState?: (s: RobotRealtimeState) => void; registerStop: (fn: (() => void) | null) => void;
   onBinChange: (bin: number | null) => void; onCommand: (message: string) => void };
 
 const JOINTS: { id: Joint; name: string; sub: string; value: number }[] = [
   { id: "p1", name: "Khớp cánh tay S2", sub: "Co / duỗi cánh tay", value: 1300 },
   { id: "p10", name: "Khớp cánh tay S1", sub: "Nâng / hạ cánh tay", value: 950 },
   { id: "p11", name: "Trụ xoay cánh tay", sub: "Xoay trái / phải", value: 1250 },
+  { id: "d2", name: "Xoay càng kẹp", sub: "Trái 90°: 500 · thẳng: 2100 · phải 60°: 2500 µs", value: 2100 },
 ];
 const POSES: { id: Pose; title: string; sub: string; command: string }[] = [
   { id: "SETUP", title: "Thiết lập tất cả", sub: "Khởi tạo 7 servo", command: "SETUP ALL" },
@@ -54,7 +55,7 @@ const ARCS = [["ARC_FORWARD_LEFT", "Tiến cua trái"], ["ARC_FORWARD_RIGHT", "T
 const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["M3", "Sau phải", "−"], ["M4", "Trước trái", "+"]];
 const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40";
 
-export default function MechanicalControl({ active, registerStop, onBinChange, onCommand }: Props) {
+export default function MechanicalControl({ active, autoMode = false, onRobotState, registerStop, onBinChange, onCommand }: Props) {
   const [robot, setRobot] = useState<RobotState | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [connected, setConnected] = useState(false);
@@ -79,6 +80,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
   const applyState = useCallback((next: RobotState) => {
     robotRef.current = next;
     setRobot(next);
+    onRobotState?.(next);
     if (!next.fresh || !next.connected) return;
     const values = { ...draftRef.current };
     for (const j of JOINTS) {
@@ -89,7 +91,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
     setDraft(values);
     const currentBin = BINS.find(b => next.hardware.joints?.p9 === next.config.bins[b.key]);
     if (next.hardware.joints?.p9 != null) onBinChange(currentBin?.id ?? null);
-  }, [onBinChange]);
+  }, [onBinChange, onRobotState]);
 
   const request = useCallback(async (path: string, payload?: unknown): Promise<RobotState> => {
     if (!realtimeRef.current) throw new Error("Kết nối Supabase chưa sẵn sàng");
@@ -122,7 +124,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
       const next = await request(path, { ...payload, epoch: robotRef.current?.epoch ?? 0 });
       if (generation !== generationRef.current) return false;
       applyState(next);
-      setMessage("command" in payload ? payload.command === "STOP" ? "Đã dừng và hủy chuỗi tư thế." : "Python đã nhận thao tác." : path === "poses" ? "Đã lưu tư thế vào Python." : "Python đã nhận xung khớp.");
+      if (!(path === "operator" && "command" in payload && payload.command.startsWith("MECHANICS "))) setMessage("command" in payload ? payload.command === "STOP" ? "Đã dừng và hủy chuỗi tư thế." : "Python đã nhận thao tác." : path === "poses" ? "Đã lưu tư thế vào Python." : "Python đã nhận xung khớp.");
       onCommand("mechanics:" + ("command" in payload ? payload.command : "joint" in payload ? `${payload.joint}:${payload.pulse_us}` : `save:${payload.name}`));
       return true;
     } catch (error) {
@@ -188,14 +190,6 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
     return () => registerStop(null);
   }, [mutate, registerStop]);
 
-  const previousActive = useRef(active);
-  useEffect(() => {
-    if (previousActive.current && !active && robotRef.current?.connected && !robotRef.current.stopped) {
-      void mutate({ command: "STOP" }, "command", true);
-    }
-    previousActive.current = active;
-  }, [active, mutate]);
-
   useEffect(() => {
     if (!connected) return;
     const timer = setInterval(async () => {
@@ -256,8 +250,37 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
     {symbol && <span aria-hidden="true" className="text-2xl leading-none">{symbol}</span>}<span className="text-[10px] font-semibold">{title}</span>
   </button>;
 
+  const autoState = robot?.auto;
+  const operatorReady = brokerOnline && robot?.fresh && autoState?.operator_protocol === 1;
+  const mechanicsOn = autoState?.mechanics_enabled !== false;
+  const runOperator = (command: string) => { releaseDrive(); void mutate({command}, "operator"); };
   if (!active) return null;
   return <section id="mechanical-control" className="mb-5 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-soft">
+    {autoMode && <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">AUTO · Camera và cơ khí</h2><p className="mt-1 text-sm text-slate-500">S1 → S2 → xoay càng → đóng kẹp → nâng vật</p></div>
+      <button type="button" aria-label="Quyền điều khiển cơ khí của Auto" aria-pressed={mechanicsOn} disabled={!operatorReady || pending || autoState?.transitioning}
+        onClick={() => runOperator(mechanicsOn ? "MECHANICS OFF" : "MECHANICS ON")}
+        className={`min-h-12 rounded-xl px-5 text-sm font-bold text-white disabled:opacity-40 ${mechanicsOn ? "bg-emerald-600" : "bg-red-600"}`}>
+        {mechanicsOn ? "● Xanh · AUTO điều khiển cơ khí" : "● Đỏ · Bạn điều khiển cơ khí"}</button></div>
+      <p className="mt-3 text-sm text-slate-600">{mechanicsOn ? "Auto gửi lệnh tới tay, bốn bánh, thùng và nắp." : "Camera vẫn nhận diện. Các lệnh dự kiến hiển thị bên dưới; dùng bảng điều khiển để thao tác cơ khí."}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button className={button} disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
+        <button className={button} disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}>Dừng AUTO</button>
+        <button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button>
+        <button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running} onClick={() => runOperator("RELEASE")}>Thả vật vào thùng</button>
+      </div>
+      {!operatorReady && <p className="mt-3 text-sm text-amber-700">Kết nối Python V3.15 bên dưới để dùng các nút AUTO mới.</p>}
+      {operatorReady && !autoState?.orientation_enabled && <p className="mt-3 text-sm text-amber-700">Xoay theo hướng vật chưa bật: cần hiệu chuẩn camera → D2 trong robot_params.py. Ở chế độ đỏ, bạn có thể đặt góc bằng thanh D2 trước khi gắp.</p>}
+      <div role="status" className={`mt-4 rounded-xl p-3 text-sm ${autoState?.distance_ready ? "bg-emerald-100 text-emerald-900" : "bg-white text-slate-600"}`}>
+        {autoState?.distance_ready ? "Đã đạt khoảng cách 25–30 cm · đã xác nhận cảm biến" : "Khoảng cách: chờ mẫu cảm biến hợp lệ"}
+        {autoState?.tof_mm != null && ` · ${(autoState.tof_mm / 10).toFixed(1)} cm`}
+      </div>
+      <p className="mt-3 text-sm" role="status">{autoState?.message || "AUTO chưa chạy"}</p>
+      <p className="mt-2 text-xs text-slate-500">{autoState?.orientation?.angle_deg != null ? `Góc ảnh: ${autoState.orientation.angle_deg.toFixed(1)}° · D2 dự kiến ${autoState.orientation.pulse_us ?? "—"} µs` : autoState?.orientation?.reason || "Góc vật: chờ ảnh"}{autoState?.orientation?.calibrated === false ? " · cần hiệu chuẩn góc camera trước khi bật xoay tự động" : ""}</p>
+      <div className="mt-4 grid gap-3 lg:grid-cols-2"><div className="rounded-xl border bg-white p-4"><h3 className="font-semibold">Lệnh AUTO dự kiến</h3><p className="mb-2 text-xs text-slate-500">Nút đỏ: các lệnh này chưa gửi tới cơ khí.</p>
+      <ul className="space-y-2 text-sm">{autoState?.planned_commands?.length ? autoState.planned_commands.map((entry,i)=><li key={i}><b>{entry.component}:</b> {entry.command}</li>) : <li className="text-slate-500">Chờ ảnh mới và mục tiêu ổn định.</li>}</ul></div>
+      <div className="rounded-xl border bg-white p-4"><h3 className="font-semibold">Lệnh Arduino đã nhận</h3><p className="mb-2 text-xs text-slate-500">Xác nhận nhận lệnh, chưa phải vị trí đo thực tế.</p><ol className="max-h-44 space-y-1 overflow-auto font-mono text-xs">{robot?.command_trace?.slice(0,16).map((entry,i)=><li key={i}>{entry.time} · {entry.source} · {entry.command}</li>)}</ol></div></div>
+    </div>}
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white"><SlidersHorizontal size={21}/></div><div><div className="text-[10px] font-bold uppercase tracking-[.15em] text-emerald-700">Manual / Mechanical control</div><h2 className="text-xl font-bold">Điều khiển cơ khí</h2><p className="mt-0.5 text-xs text-slate-500">Cánh tay · càng kẹp · bánh xe · thùng rác</p></div></div>
       <div className="flex items-center gap-2">{robot?.simulation && <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[10px] font-bold text-amber-800">MÔ PHỎNG</span>}<span className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold ${ready ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}><span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-emerald-500" : "bg-slate-400"}`}/>{ready ? "Arduino đã kết nối" : "Chưa kết nối Arduino"}</span></div>
@@ -285,7 +308,7 @@ export default function MechanicalControl({ active, registerStop, onBinChange, o
               const values = { ...draftRef.current };
               for (const j of JOINTS) if (robot.config.poses[pose][j.id] != null) { values[j.id] = robot.config.poses[pose][j.id]; dirtyRef.current.add(j.id); }
               draftRef.current = values; setDraft(values); setMessage("Đã nạp tư thế vào thanh kéo; chưa gửi tới Arduino.");
-            }}>Nạp giá trị</button><button disabled={!canMove} onClick={() => void mutate({ name: pose, values: draftRef.current }, "poses")} className={button}><Save size={13}/>Lưu</button>
+            }}>Nạp giá trị</button><button disabled={!canMove} onClick={() => void mutate({ name: pose, values: {p1: draftRef.current.p1, p10: draftRef.current.p10, p11: draftRef.current.p11} }, "poses")} className={button}><Save size={13}/>Lưu</button>
           </div>
         </div>}
         <div className="mt-3 rounded-xl bg-slate-50 p-3"><div className="flex items-center justify-between gap-2 text-[11px]"><span className="truncate text-slate-500">{ready ? robot.job : "Tư thế do Python thiết lập và lưu"}</span><span className="font-bold text-emerald-700">{robot?.busy ? `${robot.progress}%` : ready && robot.stopped ? "ĐANG KHÓA" : ""}</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${robot?.progress ?? 0}%` }}/></div></div>

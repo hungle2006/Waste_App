@@ -1,9 +1,18 @@
 import { makeSupabase } from "./supabase";
 
+export type AutoState = {
+  operator_protocol?: number; mechanics_enabled?: boolean; auto_running?: boolean;
+  assist_running?: boolean; transitioning?: boolean; state?: string; message?: string;
+  distance_ready?: boolean; tof_mm?: number | null; tof_votes?: number; label?: string | null; bin?: number | null;
+  target_fresh?: boolean; orientation?: {angle_deg?: number; pulse_us?: number; reason?: string; calibrated?: boolean};
+  orientation_enabled?: boolean; orientation_calibrated?: boolean;
+  planned_commands?: {component: string; command: string; delivery: string}[];
+};
 export type RobotRealtimeState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean; simulation: boolean;
+  auto?: AutoState; auto_running?: boolean; command_trace?: {time: string; command: string; source: string; delivery: string}[];
   epoch: number; job: string; progress: number; auto_rear: boolean;
-  hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number> };
+  hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number>; tof?: {valid?: boolean; mm?: number; age_ms?: number; present?: boolean} };
   config: { limits: Record<string, [number, number]>; poses: Record<string, Record<string, number>>;
     grip: { open: number; close: number }; bins: Record<string, number> };
   log: { time: string; text: string }[];
@@ -77,7 +86,7 @@ export class RobotRealtimeClient {
   }
 
   private invalidate(reason: string) {
-    if (this.last) { this.last = { ...this.last, connected: false, fresh: false, hardware: {}, job: reason }; this.onState(this.last); }
+    if (this.last) { this.last = { ...this.last, connected: false, fresh: false, hardware: {}, auto: this.last.auto ? {...this.last.auto, auto_running: false, distance_ready: false, target_fresh: false, planned_commands: []} : undefined, job: reason }; this.onState(this.last); }
     for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.reject(new Error(reason)); }
     this.pending.clear();
   }
