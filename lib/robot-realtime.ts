@@ -6,6 +6,10 @@ export type AutoState = {
   distance_ready?: boolean; tof_mm?: number | null; tof_votes?: number; label?: string | null; bin?: number | null;
   target_fresh?: boolean; orientation?: {angle_deg?: number; pulse_us?: number; reason?: string; calibrated?: boolean};
   orientation_enabled?: boolean; orientation_calibrated?: boolean;
+  sensor_grasp_ready?: boolean; sensor_grasp_reason?: string; sensor_distance_ready?: boolean;
+  sensor_tof_mm?: number | null; sensor_min_mm?: number; sensor_max_mm?: number;
+  release_ready?: boolean; lift_ready?: boolean; held_bin?: number | null;
+  wrist?: {pulse_us?: number | null; angle_deg?: number | null; min_deg: number; max_deg: number; step_deg: number};
   planned_commands?: {component: string; command: string; delivery: string}[];
 };
 export type RobotRealtimeState = {
@@ -86,7 +90,7 @@ export class RobotRealtimeClient {
   }
 
   private invalidate(reason: string) {
-    if (this.last) { this.last = { ...this.last, connected: false, fresh: false, hardware: {}, auto: this.last.auto ? {...this.last.auto, auto_running: false, distance_ready: false, target_fresh: false, planned_commands: []} : undefined, job: reason }; this.onState(this.last); }
+    if (this.last) { this.last = { ...this.last, connected: false, fresh: false, hardware: {}, auto: this.last.auto ? {...this.last.auto, auto_running: false, distance_ready: false, sensor_grasp_ready: false, sensor_distance_ready: false, release_ready: false, lift_ready: false, wrist: undefined, target_fresh: false, planned_commands: []} : undefined, job: reason }; this.onState(this.last); }
     for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.reject(new Error(reason)); }
     this.pending.clear();
   }

@@ -115,4 +115,65 @@ describe('Operator controls with robot ACK',()=>{
   fireEvent.click(screen.getByRole('button',{name:'DỪNG KHẨN'}));
   await waitFor(()=>expect(fake.requests.filter(x=>x.body.command==='STOP')).toHaveLength(1));
  });
+ it.each([false,true])('10-degree controls work in manual and red AUTO (autoMode=%s)',async(autoMode)=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+  render(<MechanicalControl active autoMode={autoMode} registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);await connect();
+  expect(screen.getByLabelText('Góc xoay càng đã nhận').textContent).toBe('Thẳng Oy · 0°');
+  fireEvent.click(screen.getByRole('button',{name:'Xoay phải 10 độ'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.action==='operator'&&x.body.command==='WRIST RIGHT')).toBe(true));
+  await act(async()=>{fake.state.hardware.joints.d2=2167;fake.onState(structuredClone(fake.state))});
+  expect(screen.getByLabelText('Góc xoay càng đã nhận').textContent).toBe('Phải 10°');
+  fireEvent.click(screen.getByRole('button',{name:'Xoay trái 10 độ'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='WRIST LEFT')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Đưa càng về 0 độ'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='WRIST CENTER')).toBe(true));
+ });
+ it('locks 10-degree buttons at physical bounds and while Auto owns mechanics',async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.hardware.joints.d2=2500;mount();await connect();
+  expect(screen.getByRole('button',{name:'Xoay phải 10 độ'}).hasAttribute('disabled')).toBe(true);
+  await act(async()=>{fake.state.hardware.joints.d2=500;fake.onState(structuredClone(fake.state))});
+  expect(screen.getByRole('button',{name:'Xoay trái 10 độ'}).hasAttribute('disabled')).toBe(true);
+  await act(async()=>{fake.state.hardware.joints.d2=2100;fake.state.auto_running=true;fake.onState(structuredClone(fake.state))});
+  expect(screen.getByRole('button',{name:'Xoay phải 10 độ'}).hasAttribute('disabled')).toBe(true);
+ });
+ it.each([false,true])('sensor grasp needs backend readiness without a camera target (autoMode=%s)',async(autoMode)=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.target_fresh=false;
+  if(autoMode)fake.state.auto.mechanics_enabled=false;
+  render(<MechanicalControl active autoMode={autoMode} registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);await connect();
+  const grab=screen.getByRole('button',{name:'Gắp theo cảm biến',exact:true});
+  expect(grab.hasAttribute('disabled')).toBe(true);
+  await act(async()=>{fake.state.auto.sensor_grasp_ready=true;fake.state.auto.sensor_grasp_reason='Sẵn sàng';fake.onState(structuredClone(fake.state))});
+  expect(grab.hasAttribute('disabled')).toBe(false);fireEvent.click(grab);
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='GRASP SENSOR')).toBe(true));
+  await act(async()=>{fake.state.fresh=false;fake.onState(structuredClone(fake.state))});
+  expect(grab.hasAttribute('disabled')).toBe(true);
+ });
+ it('routes hold, lift and release independently of the selected screen mode',async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.release_ready=true;fake.state.auto.lift_ready=true;
+  render(<MechanicalControl active registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);await connect();
+  fireEvent.click(screen.getByRole('button',{name:'Nâng / rút tay · giữ góc kẹp'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='LIFT')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Thả vật vào thùng'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='RELEASE')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Giữ vị trí'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='HOLD')).toBe(true));
+ });
+ it('V3.15 keeps existing controls but cannot send V3.16 operator commands',async()=>{
+  mount();await connect();
+  expect(screen.getByRole('button',{name:'Xoay phải 10 độ'}).hasAttribute('disabled')).toBe(true);
+  expect(screen.getByRole('button',{name:'Gắp theo cảm biến',exact:true}).hasAttribute('disabled')).toBe(true);
+  expect(screen.getByRole('button',{name:'Bắt đầu AUTO'}).hasAttribute('disabled')).toBe(false);
+ });
+ it('hold cancels the held wheel refresh timer',async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+  mount();await connect();chooseTab('Bánh xe');
+  fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='DRIVE FORWARD')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Giữ vị trí'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='HOLD')).toBe(true));
+  const count=fake.requests.filter(x=>x.body.command==='DRIVE FORWARD').length;
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,250))});
+  expect(fake.requests.filter(x=>x.body.command==='DRIVE FORWARD')).toHaveLength(count);
+ });
 });
+

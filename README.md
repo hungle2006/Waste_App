@@ -1,6 +1,6 @@
-# Waste Robot Control · V3.15
+# Waste Robot Control · V3.16
 
-Ứng dụng Next.js của dự án Vercel `waste-app`, ghép với bộ Python V3.15.
+Ứng dụng Next.js của dự án Vercel `waste-app`, ghép với bộ Python V3.16.
 
 ## Điều khiển
 
@@ -16,6 +16,16 @@ Nút đổi màu theo trạng thái Python đã xác nhận. Chuyển xanh/đỏ
 
 D2: trái 90° = 500 µs, thẳng Oy = 2100 µs, phải 60° = 2500 µs. Không cho góc phải vượt 60°. Xoay tự động theo ảnh cần hiệu chuẩn camera/D2 trong `robot_params.py`; mặc định chưa bật. Giao diện hiển thị điều này. Góc chỉ đổi ở bước gắp và được giữ trong lúc nâng.
 
+## Nút mới V3.16
+
+- **Trái 10° / Phải 10° / 0° Oy**: lấy xung D2 Arduino vừa xác nhận làm mốc, chuyển theo các mốc 500/2100/2500 µs, có chặn trái 90° và phải 60°. Hiển thị góc ước tính từ xung, không phải encoder. Lệnh tương đối tính phía Python; nhấn khi robot bận không tạo thêm hàng chờ.
+- **Gắp theo cảm biến** có ở Manual và Auto đỏ, không cần mục tiêu AI. Python xác nhận ba mẫu VL53 mới trong khoảng cấu hình và tay nằm trên quỹ đạo đã đo. Ở tư thế cuối có thể dùng D19. D19 phải ổn định trước khi đóng kẹp; chuỗi không tự chạy bánh. Giữ D2 bạn đã đặt khi hạ và nâng; ngăn thả lấy ngăn hiện tại bạn đang chọn.
+- **Nâng / rút tay**: rút theo quỹ đạo đã đo, giữ D2. Nếu kẹp đang đóng phải tiếp tục có D19 giữ vật.
+- **Giữ vị trí**: phanh bánh, hủy chuỗi đang chạy, giữ xung servo và chuyển quyền cơ khí về người dùng. Nếu Auto camera đang chạy thì tiếp tục quan sát. STOP vẫn dừng cả hệ thống và khóa servo.
+- **Thả vật vào thùng**: xuất hiện cả hai màn hình, chỉ mở khi Python còn ghi nhận vật đã gắp, kẹp đóng và D19 có vật.
+
+Các nút mới cần `operator_protocol=2` của Python V3.16. Python V3.15 vẫn dùng được chức năng cũ, nhưng không có các nút lệnh mới.
+
 ## Phát triển và kiểm tra
 
 ```sh
@@ -25,7 +35,7 @@ npm run build
 npm run dev
 ```
 
-Bảy kiểm thử React DOM kiểm tra chuyển quyền, D2, xác nhận khoảng cách, gắp/thả, STOP, giữ/nhả bánh, dừng bánh khi đổi nhóm, điều hướng bàn phím và giữ nguyên phiên camera/robot khi đổi giao diện. Trạng thái và ACK trong kiểm thử là mô phỏng, không gửi lệnh tới robot. Build kiểm tra TypeScript. Chưa kiểm chứng camera, USB hoặc tải cơ khí thật trong môi trường phát triển.
+Mười lăm kiểm thử React DOM kiểm tra chuyển quyền, D2, xác nhận khoảng cách, gắp/thả, STOP, giữ/nhả bánh, dừng bánh khi đổi nhóm, điều hướng bàn phím và giữ nguyên phiên camera/robot khi đổi giao diện. Trạng thái và ACK trong kiểm thử là mô phỏng, không gửi lệnh tới robot. Build kiểm tra TypeScript. Chưa kiểm chứng camera, USB hoặc tải cơ khí thật trong môi trường phát triển.
 
 ## Cấu hình Vercel
 
@@ -44,10 +54,11 @@ Secret LiveKit chỉ dùng phía server; API token cấp quyền subscribe, khô
 
 Channel `robot:<robot_id>`, event `command`, `type: mechanics`. Các action: `status`, `connect`, `command`, `poses`, mới thêm `operator`.
 
-Payload operator: `{ "epoch": 3, "command": "MECHANICS OFF" }`. Lệnh hỗ trợ: `AUTO START`, `AUTO STOP`, `MECHANICS ON`, `MECHANICS OFF`, `GRASP`, `RELEASE`.
+Payload operator: `{ "epoch": 3, "command": "MECHANICS OFF" }`. Lệnh hỗ trợ: `AUTO START`, `AUTO STOP`, `MECHANICS ON`, `MECHANICS OFF`, `GRASP`, `GRASP SENSOR`, `RELEASE`, `LIFT`, `HOLD`, `WRIST LEFT`, `WRIST RIGHT`, `WRIST CENTER`.
 
 Packet vẫn phải có `robot_id`, `client_id`, `request_id`, `session_id`, `seq`, `issued_at`, `ttl_ms`. Python xác nhận bằng `mechanical_ack`; `mechanical_state` mang snapshot mới. DRIVE có TTL 500 ms; các lệnh khác 8 s. Mỗi `request_id` chỉ thực thi một lần. Phiên/thứ tự/thời hạn chống phát lại; chúng không thay thế quyền truy cập kênh Supabase.
 
-`state.auto.operator_protocol == 1` xác nhận Python hỗ trợ chức năng mới. Python cũ vẫn xem/điều khiển cơ khí cũ được; nút Auto mới bị khóa kèm hướng dẫn nâng cấp.
+`state.auto.operator_protocol == 2` xác nhận Python hỗ trợ chức năng mới. Python cũ vẫn xem/điều khiển cơ khí cũ được; nút Auto mới bị khóa kèm hướng dẫn nâng cấp.
 
 `state.auto`: `mechanics_enabled`, `auto_running`, `assist_running`, `distance_ready`, `tof_mm`, `target_fresh`, `planned_commands`, `orientation_enabled`, `orientation_calibrated`. `state.command_trace` chỉ ghi lệnh đã được Arduino ACK. Pin/BIN/nhãn hiển thị theo dữ liệu nhận, không tự giả định.
+
