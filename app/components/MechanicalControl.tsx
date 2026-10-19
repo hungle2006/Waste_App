@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RobotRealtimeClient, type AutoState, type RobotRealtimeState } from "@/lib/robot-realtime";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, CircleStop,
-  Cpu, Grip, Leaf, Link2, PackageOpen, Radio, Recycle, RotateCcw,
-  Save, Settings2, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
+import { Check, ChevronDown, CircleStop, Grip, Leaf, Link2, PackageOpen, Radio,
+  Recycle, Save, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
 type Joint = "p1" | "p10" | "p11" | "d2";
 type Pose = "SETUP" | "SEARCH" | "PLACE" | "REAR";
+type ControlTab = "arm" | "drive" | "bins" | "auto";
+const CONTROL_TABS: { id: ControlTab; title: string }[] = [
+  { id: "arm", title: "Cánh tay" }, { id: "drive", title: "Bánh xe" },
+  { id: "bins", title: "Thùng & nắp" }, { id: "auto", title: "Auto & lệnh" },
+];
 type Config = {
   limits: Record<string, [number, number]>;
   poses: Record<Pose, Record<string, number>>;
@@ -66,6 +70,8 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const [message, setMessage] = useState("");
   const [speed, setSpeed] = useState(20);
   const [driveHeld, setDriveHeld] = useState("");
+  const [tab, setTab] = useState<ControlTab>("arm");
+  const controlsScrollRef = useRef<HTMLDivElement | null>(null);
   const driveRef = useRef<{ mode: string; epoch: number; speed: number } | null>(null);
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realtimeRef = useRef<RobotRealtimeClient | null>(null);
@@ -254,95 +260,100 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const operatorReady = brokerOnline && robot?.fresh && autoState?.operator_protocol === 1;
   const mechanicsOn = autoState?.mechanics_enabled !== false;
   const runOperator = (command: string) => { releaseDrive(); void mutate({command}, "operator"); };
+  const selectTab = (next: ControlTab) => {
+    releaseDrive();
+    setTab(next);
+    controlsScrollRef.current?.scrollTo?.({ top: 0 });
+  };
   if (!active) return null;
-  return <section id="mechanical-control" className="mb-5 overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-soft">
-    {autoMode && <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">AUTO · Camera và cơ khí</h2><p className="mt-1 text-sm text-slate-500">S1 → S2 → xoay càng → đóng kẹp → nâng vật</p></div>
+  return <section id="mechanical-control" aria-label="Bảng điều khiển cơ khí" className="control-panel">
+    <div className="control-toolbar">
+      <div className="flex min-w-0 items-center gap-2">
+        <SlidersHorizontal size={18} className="shrink-0 text-emerald-600"/>
+        <div className="min-w-0"><h2 className="text-sm font-bold">Điều khiển cơ khí</h2>
+          <p className={`text-[11px] ${ready ? "text-emerald-700" : "text-slate-500"}`}>{ready ? "● Arduino đã kết nối" : "○ Chưa kết nối Arduino"}{robot?.simulation ? " · Mô phỏng" : ""}</p>
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-1.5">
+        <button disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button"><Link2 size={14}/><span>Kết nối Python</span></button>
+        <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
+      </div>
+    </div>
+    {ready && robot.stopped && <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800"><span>Cơ khí đang khóa sau STOP</span><button disabled={robot.busy || pending} onClick={() => action("RESUME")} className="tool-button !border-emerald-200 !bg-emerald-600 !text-white"><Check size={14}/>Cho phép điều khiển</button></div>}
+    <p role="status" className={`control-message ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Thiếu cấu hình Supabase của app." : message || (brokerOnline ? "Kết nối Python để nhận trạng thái và điều khiển robot." : "Đang kết nối kênh robot…")}</p>
+    {autoMode && <div className="auto-toolbar">
       <button type="button" aria-label="Quyền điều khiển cơ khí của Auto" aria-pressed={mechanicsOn} disabled={!operatorReady || pending || autoState?.transitioning}
         onClick={() => runOperator(mechanicsOn ? "MECHANICS OFF" : "MECHANICS ON")}
-        className={`min-h-12 rounded-xl px-5 text-sm font-bold text-white disabled:opacity-40 ${mechanicsOn ? "bg-emerald-600" : "bg-red-600"}`}>
-        {mechanicsOn ? "● Xanh · AUTO điều khiển cơ khí" : "● Đỏ · Bạn điều khiển cơ khí"}</button></div>
-      <p className="mt-3 text-sm text-slate-600">{mechanicsOn ? "Auto gửi lệnh tới tay, bốn bánh, thùng và nắp." : "Camera vẫn nhận diện. Các lệnh dự kiến hiển thị bên dưới; dùng bảng điều khiển để thao tác cơ khí."}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button className={button} disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
-        <button className={button} disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}>Dừng AUTO</button>
-        <button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button>
-        <button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running} onClick={() => runOperator("RELEASE")}>Thả vật vào thùng</button>
-      </div>
-      {!operatorReady && <p className="mt-3 text-sm text-amber-700">Kết nối Python V3.15 bên dưới để dùng các nút AUTO mới.</p>}
-      {operatorReady && !autoState?.orientation_enabled && <p className="mt-3 text-sm text-amber-700">Xoay theo hướng vật chưa bật: cần hiệu chuẩn camera → D2 trong robot_params.py. Ở chế độ đỏ, bạn có thể đặt góc bằng thanh D2 trước khi gắp.</p>}
-      <div role="status" className={`mt-4 rounded-xl p-3 text-sm ${autoState?.distance_ready ? "bg-emerald-100 text-emerald-900" : "bg-white text-slate-600"}`}>
-        {autoState?.distance_ready ? "Đã đạt khoảng cách 25–30 cm · đã xác nhận cảm biến" : "Khoảng cách: chờ mẫu cảm biến hợp lệ"}
-        {autoState?.tof_mm != null && ` · ${(autoState.tof_mm / 10).toFixed(1)} cm`}
-      </div>
-      <p className="mt-3 text-sm" role="status">{autoState?.message || "AUTO chưa chạy"}</p>
-      <p className="mt-2 text-xs text-slate-500">{autoState?.orientation?.angle_deg != null ? `Góc ảnh: ${autoState.orientation.angle_deg.toFixed(1)}° · D2 dự kiến ${autoState.orientation.pulse_us ?? "—"} µs` : autoState?.orientation?.reason || "Góc vật: chờ ảnh"}{autoState?.orientation?.calibrated === false ? " · cần hiệu chuẩn góc camera trước khi bật xoay tự động" : ""}</p>
-      <div className="mt-4 grid gap-3 lg:grid-cols-2"><div className="rounded-xl border bg-white p-4"><h3 className="font-semibold">Lệnh AUTO dự kiến</h3><p className="mb-2 text-xs text-slate-500">Nút đỏ: các lệnh này chưa gửi tới cơ khí.</p>
-      <ul className="space-y-2 text-sm">{autoState?.planned_commands?.length ? autoState.planned_commands.map((entry,i)=><li key={i}><b>{entry.component}:</b> {entry.command}</li>) : <li className="text-slate-500">Chờ ảnh mới và mục tiêu ổn định.</li>}</ul></div>
-      <div className="rounded-xl border bg-white p-4"><h3 className="font-semibold">Lệnh Arduino đã nhận</h3><p className="mb-2 text-xs text-slate-500">Xác nhận nhận lệnh, chưa phải vị trí đo thực tế.</p><ol className="max-h-44 space-y-1 overflow-auto font-mono text-xs">{robot?.command_trace?.slice(0,16).map((entry,i)=><li key={i}>{entry.time} · {entry.source} · {entry.command}</li>)}</ol></div></div>
+        className={`min-h-11 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold text-white disabled:opacity-40 ${mechanicsOn ? "bg-emerald-600" : "bg-red-600"}`}>
+        {mechanicsOn ? "● Xanh · AUTO điều khiển" : "● Đỏ · Bạn điều khiển"}</button>
+      <button className="tool-button !min-h-11" disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
+      <button type="button" aria-label="Dừng AUTO" title="Dừng AUTO" className="tool-button !min-h-11" disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}><Square size={14}/></button>
     </div>}
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white"><SlidersHorizontal size={21}/></div><div><div className="text-[10px] font-bold uppercase tracking-[.15em] text-emerald-700">Manual / Mechanical control</div><h2 className="text-xl font-bold">Điều khiển cơ khí</h2><p className="mt-0.5 text-xs text-slate-500">Cánh tay · càng kẹp · bánh xe · thùng rác</p></div></div>
-      <div className="flex items-center gap-2">{robot?.simulation && <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[10px] font-bold text-amber-800">MÔ PHỎNG</span>}<span className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold ${ready ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}><span className={`h-1.5 w-1.5 rounded-full ${ready ? "bg-emerald-500" : "bg-slate-400"}`}/>{ready ? "Arduino đã kết nối" : "Chưa kết nối Arduino"}</span></div>
+    <div role="tablist" aria-label="Nhóm điều khiển cơ khí" className="control-tabs">
+      {CONTROL_TABS.map((item, index) => <button key={item.id} type="button" role="tab" id={`control-tab-${item.id}`} aria-controls={`control-panel-${item.id}`} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
+        onClick={() => selectTab(item.id)} onKeyDown={event => {
+          let next: number | undefined;
+          if (event.key === "ArrowRight") next = (index + 1) % CONTROL_TABS.length;
+          if (event.key === "ArrowLeft") next = (index + CONTROL_TABS.length - 1) % CONTROL_TABS.length;
+          if (event.key === "Home") next = 0;
+          if (event.key === "End") next = CONTROL_TABS.length - 1;
+          if (next !== undefined) { event.preventDefault(); const id = CONTROL_TABS[next].id; selectTab(id); document.getElementById(`control-tab-${id}`)?.focus(); }
+        }} className={tab === item.id ? "is-selected" : ""}>{item.title}</button>)}
     </div>
-    <div className="px-5 pt-5 sm:px-6">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-        <Radio size={17} className="ml-1 text-emerald-600"/>
-        <div className="min-w-0 flex-1"><div className="text-xs font-semibold">Supabase Realtime</div><div className="mt-0.5 text-[10px] text-slate-500">{brokerOnline ? "Đã kết nối kênh robot · lệnh và trạng thái" : "Đang kết nối kênh robot"}</div></div>
-        <button disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className={button}><Link2 size={14}/>Kết nối Python</button>
-        <button disabled={!ready || !robot?.stopped || robot.busy || pending} onClick={() => action("RESUME")} className="btn flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><Check size={14}/>Cho phép điều khiển</button>
-        <button onClick={() => void mutate({ command: "STOP" }, "command", true)} className="btn flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700"><CircleStop size={15}/>Dừng cơ khí</button>
-      </div>
-      <p role="status" className={`mt-2 min-h-5 text-xs ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Thiếu cấu hình Supabase của app." : message || "Chạy bộ Python Realtime trên máy nối Arduino, rồi bấm Kết nối Python. Camera dùng LiveKit; AI dùng Modal."}</p>
-    </div>
-    <div className="grid gap-6 px-5 py-5 sm:px-6 xl:grid-cols-[1.1fr_1fr]">
-      <div>
-        <div className="mb-3 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-bold"><Settings2 size={16} className="text-emerald-600"/>Tư thế cánh tay</h3><button onClick={() => setEditing(v => !v)} aria-expanded={editing} className="flex items-center gap-1 text-xs font-semibold text-emerald-700"><Save size={13}/>Lưu tư thế<ChevronDown size={13}/></button></div>
-        <div className="mb-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700"><Check size={13}/>Mặc định: tìm rác phía trước</div>
-        <div className="grid grid-cols-2 gap-2">{POSES.map(p => <button key={p.id} disabled={!canMove} onClick={() => action(p.command)} className={`${button} !block !justify-start !p-3 !text-left ${p.id === "SEARCH" ? "!border-emerald-200 !bg-emerald-50" : ""}`}><span className="font-bold">{p.title}</span><span className="mt-1 block text-[10px] font-normal text-slate-500">{p.sub}</span></button>)}</div>
-        {editing && <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-3">
-          <p className="text-xs text-slate-600">Lưu các giá trị thanh kéo vào tư thế của Python. Lưu không làm tay chuyển động.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><select aria-label="Tư thế cần lưu" value={pose} onChange={e => setPose(e.target.value as Pose)} className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-2 text-xs">{POSES.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select>
-            <button className={button} disabled={!robot} onClick={() => {
-              if (!robot) return;
-              const values = { ...draftRef.current };
-              for (const j of JOINTS) if (robot.config.poses[pose][j.id] != null) { values[j.id] = robot.config.poses[pose][j.id]; dirtyRef.current.add(j.id); }
-              draftRef.current = values; setDraft(values); setMessage("Đã nạp tư thế vào thanh kéo; chưa gửi tới Arduino.");
-            }}>Nạp giá trị</button><button disabled={!canMove} onClick={() => void mutate({ name: pose, values: {p1: draftRef.current.p1, p10: draftRef.current.p10, p11: draftRef.current.p11} }, "poses")} className={button}><Save size={13}/>Lưu</button>
-          </div>
-        </div>}
-        <div className="mt-3 rounded-xl bg-slate-50 p-3"><div className="flex items-center justify-between gap-2 text-[11px]"><span className="truncate text-slate-500">{ready ? robot.job : "Tư thế do Python thiết lập và lưu"}</span><span className="font-bold text-emerald-700">{robot?.busy ? `${robot.progress}%` : ready && robot.stopped ? "ĐANG KHÓA" : ""}</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${robot?.progress ?? 0}%` }}/></div></div>
-        <div className="mt-4 divide-y divide-slate-100">{JOINTS.map(j => {
+    <div ref={controlsScrollRef} className="controls-scroll" aria-label="Nội dung bảng điều khiển">
+      <div role="tabpanel" id="control-panel-arm" aria-labelledby="control-tab-arm" hidden={tab !== "arm"} tabIndex={0}>
+        <div className="mb-3 flex items-center justify-between gap-2"><h3 className="control-section-title"><Grip size={16}/>Càng kẹp</h3><span className="text-[11px] text-slate-500">{robot?.busy ? `${robot.progress}% · đang chạy` : "Xem camera khi chỉnh khớp"}</span></div>
+        <div className="grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("GRIP OPEN")} className={`${button} !border-emerald-200 !bg-emerald-50 !text-emerald-800`}><PackageOpen size={17}/>Mở càng kẹp</button><button disabled={!canMove} onClick={() => action("GRIP CLOSE")} className={button}><Grip size={17}/>Đóng càng kẹp</button></div>
+        {autoMode && <div className="mt-2 grid grid-cols-2 gap-2"><button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button><button className={button} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running} onClick={() => runOperator("RELEASE")}>Thả vật vào thùng</button></div>}
+        <div className="mt-3 divide-y divide-slate-100">{JOINTS.map(j => {
           const [min, max] = robot?.config.limits[j.id] ?? [500, j.id === "p1" ? 3500 : 2500];
-          const submit = () => { if (canMove) void mutate({ joint: j.id, pulse_us: draftRef.current[j.id] }); };
-          return <div key={j.id} className="py-4 first:pt-1">
-            <div className="mb-2.5 flex items-center justify-between gap-3"><div className="flex items-center gap-2.5"><span className="flex h-9 min-w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-600">{j.id.toUpperCase()}</span><div><label htmlFor={`mechanical-${j.id}`} className="text-[13px] font-semibold">{j.name}</label><div className="text-[10px] text-slate-400">{j.sub}</div></div></div><div className="flex items-center gap-1.5"><input aria-label={`Xung ${j.name}`} type="number" min={min} max={max} step={1} value={draft[j.id]} onChange={e => editJoint(j.id, Number(e.target.value))} className="w-[76px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-emerald-700 outline-none focus:border-emerald-500"/><span className="text-[10px] text-slate-400">µs</span></div></div>
-            <input id={`mechanical-${j.id}`} type="range" min={min} max={max} step={10} value={draft[j.id]} disabled={Boolean(robot?.busy || robot?.auto_running || pending)} onChange={e => editJoint(j.id, Number(e.target.value))} onPointerUp={submit} onKeyUp={e => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) submit(); }} className="h-5 w-full cursor-pointer accent-emerald-600 disabled:opacity-50"/>
-            <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400"><span>{min} µs</span><span className="text-slate-500">Đã nhận: <span className="font-semibold">{acknowledged(j.id)}</span></span><button disabled={!canMove} onClick={submit} className="rounded-lg border border-slate-200 px-2.5 py-1 font-semibold text-emerald-700 disabled:opacity-35">Gửi</button><span>{max} µs</span></div>
+          const submit = () => { if (canMove) void mutate({joint: j.id, pulse_us: draftRef.current[j.id]}); };
+          return <div key={j.id} className="joint-control">
+            <div className="flex items-center justify-between gap-2"><label htmlFor={`mechanical-${j.id}`} className="text-xs font-semibold"><span className="mr-2 text-[10px] font-bold text-emerald-700">{j.id.toUpperCase()}</span>{j.name}</label>
+              <div className="flex shrink-0 items-center gap-1"><input aria-label={`Xung ${j.name}`} type="number" min={min} max={max} step={1} value={draft[j.id]} onChange={e => editJoint(j.id, Number(e.target.value))} className="w-[72px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-right text-sm font-bold text-emerald-700 outline-none focus:border-emerald-500"/><span className="text-[10px] text-slate-400">µs</span></div>
+            </div>
+            <input id={`mechanical-${j.id}`} type="range" min={min} max={max} step={10} value={draft[j.id]} disabled={!canMove} onChange={e => editJoint(j.id, Number(e.target.value))} onPointerUp={submit} onKeyUp={e => {if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End","PageUp","PageDown"].includes(e.key)) submit();}} className="mt-2 h-7 w-full cursor-pointer accent-emerald-600 disabled:opacity-40"/>
+            <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400"><span>{min}–{max} µs</span><span className="text-slate-500">Đã nhận: {acknowledged(j.id)}</span><button disabled={!canMove} onClick={submit} className="min-h-8 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-emerald-700 disabled:opacity-35">Gửi</button></div>
+            {j.id === "d2" && <p className="mt-1.5 text-[10px] text-slate-400">{j.sub}</p>}
           </div>;
         })}</div>
-        <p className="mt-2 text-[10px] leading-relaxed text-slate-400">S2 (P1): 500–3500 µs. Các khớp khác: 500–2500 µs. Xung đã nhận không phải góc đo thực tế. Khớp nối và càng kẹp được điều khiển qua tư thế và nút riêng.</p>
+        <details className="control-details mt-3"><summary>Tư thế có sẵn & lưu tư thế</summary><div className="mt-3 grid grid-cols-2 gap-2">{POSES.map(p => <button key={p.id} disabled={!canMove} onClick={() => action(p.command)} className={`${button} !block !p-3 !text-left`}><span>{p.title}</span><span className="mt-1 block text-[10px] font-normal text-slate-500">{p.sub}</span></button>)}</div>
+          <button onClick={() => setEditing(v => !v)} aria-expanded={editing} className="mt-3 flex min-h-10 items-center gap-2 text-xs font-semibold text-emerald-700"><Save size={14}/>Lưu tư thế<ChevronDown size={14}/></button>
+          {editing && <div className="space-y-3 rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Lưu các giá trị thanh kéo vào Python; thao tác lưu không làm tay chuyển động.</p><select aria-label="Tư thế cần lưu" value={pose} onChange={e => setPose(e.target.value as Pose)} className="min-h-10 w-full rounded-lg border bg-white px-2 text-xs">{POSES.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select><div className="grid grid-cols-2 gap-2"><button className={button} disabled={!robot} onClick={() => {
+            if (!robot) return; const values = {...draftRef.current};
+            for (const j of JOINTS) if (robot.config.poses[pose][j.id] != null) {values[j.id] = robot.config.poses[pose][j.id]; dirtyRef.current.add(j.id);}
+            draftRef.current = values; setDraft(values); setMessage("Đã nạp tư thế vào thanh kéo; chưa gửi tới Arduino.");
+          }}>Nạp giá trị</button><button disabled={!canMove} onClick={() => void mutate({name: pose, values: {p1: draftRef.current.p1, p10: draftRef.current.p10, p11: draftRef.current.p11}}, "poses")} className={button}><Save size={13}/>Lưu</button></div></div>}
+          <p className="mt-3 text-[11px] text-slate-500">Xung đã nhận không phải góc đo thực tế. Khớp nối và càng kẹp điều khiển qua tư thế và nút riêng.</p>
+        </details>
       </div>
-      <div className="space-y-5">
-        <div className="rounded-2xl border border-slate-200 p-4"><h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Grip size={16} className="text-emerald-600"/>Càng kẹp</h3><div className="grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("GRIP OPEN")} className="btn flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl bg-emerald-600 text-xs font-bold text-white disabled:opacity-40"><PackageOpen size={19}/>Mở càng kẹp<span className="text-[10px] font-normal opacity-70">{robot?.config.grip.open ?? 600} µs</span></button><button disabled={!canMove} onClick={() => action("GRIP CLOSE")} className={`${button} !min-h-[64px] !flex-col`}><Grip size={19}/>Đóng càng kẹp<span className="text-[10px] font-normal text-slate-400">{robot?.config.grip.close ?? 1400} µs</span></button></div></div>
-        <div className="rounded-2xl border border-slate-200 p-4"><h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><Trash2 size={16} className="text-emerald-600"/>Thùng phân loại</h3><div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">{BINS.map(b => {
-          const pulse = robot?.config.bins[b.key] ?? b.pulse; const selected = hardware.joints?.p9 === pulse;
-          return <button disabled={!canMove} key={b.key} onClick={() => action(`SORT ${b.key}`)} className={`btn rounded-xl border px-2 py-3 text-center disabled:opacity-40 ${selected ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"}`}><span className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${b.tone}`}><b.Icon size={17}/></span><span className="block text-xs font-semibold">{b.title}</span><span className="mt-1 block text-[10px] text-slate-400">BIN {b.id} · {pulse} µs</span></button>;
-        })}</div><div className="mt-3 grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("LID OPEN")} className={button}><PackageOpen size={15}/>Mở nắp</button><button disabled={!canMove} onClick={() => action("LID CLOSE")} className={button}><Square size={13}/>Đóng nắp</button></div><p className="mt-2 text-[10px] text-slate-400">Chọn ngăn chỉ xoay thùng. Nắp và kẹp thao tác riêng.</p></div>
-        <div className="rounded-2xl border border-slate-200 p-4"><div className="mb-3 flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-bold"><Radio size={16} className="text-emerald-600"/>Cảm biến cơ khí</h3><span className="text-[10px] text-slate-400">LOW = phát hiện</span></div><div className="grid grid-cols-2 gap-2">{[["D19", "IR gắp vật"], ["D18", "Thùng rác"]].map(([pin, title]) => {
-          const val = hardware.sensors?.[pin];
-          return <div key={pin} className={`rounded-xl border px-2.5 py-3 ${val === 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50"}`}><div className="text-[10px] font-bold text-slate-400">{title} · {pin}</div><div className={`mt-2 text-[11px] font-semibold ${val === 0 ? "text-emerald-700" : "text-slate-600"}`}>{val === 0 ? "Có vật" : val === 1 ? "Không phát hiện" : "Chưa có dữ liệu"}</div></div>;
-        })}</div><p className="mt-2 text-[10px] text-slate-400">OUT của IR nối D19; cảm biến thùng rác nối D18 trên Mega.</p><div className="mt-3 flex items-center justify-between gap-2"><span className="text-xs font-semibold">Tự phân loại phía sau D18</span><button disabled={!canMove} onClick={() => action(robot?.auto_rear ? "AUTO REAR OFF" : "AUTO REAR ON")} className="btn rounded-lg border px-3 py-2 text-xs font-bold text-emerald-700 disabled:opacity-40">{robot?.auto_rear ? "Đang bật · Tắt" : "Bật"}</button></div><p className="mt-2 text-[10px] text-slate-400">D18 → nhìn sau → Modal → xoay ngăn → mở nắp. Đang giữ vật phía trước thì chờ lượt đó hoàn tất.</p></div>
-        <div className="rounded-2xl border border-slate-200 p-4">
-          <div className="mb-3 flex items-start justify-between gap-3"><div><h3 className="text-sm font-bold">Di chuyển Mecanum</h3><p className="mt-1 text-[11px] text-slate-500">Giữ để chạy · thả để dừng</p></div><label className="flex items-center gap-2 text-[11px] text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => { const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n); }} className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center font-bold text-emerald-700"/></label></div>
-          <div className="grid grid-cols-3 gap-2">{DIRECTIONS.map(([mode, title, symbol]) => mode === "STOP" ? <button key={mode} aria-label={title} onClick={() => void mutate({ command: "XM" }, "command", true)} className="btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button> : driveButton(mode, title, symbol))}</div>
-          <div className="mt-2 grid grid-cols-2 gap-2">{TURNS.map(([mode, title, symbol]) => driveButton(mode, title, symbol))}</div>
-          <div className="mt-3 border-t border-slate-100 pt-3"><p className="mb-2 text-[10px] font-semibold text-slate-500">Cua theo cung khi đang tiến / lùi</p><div className="grid grid-cols-2 gap-2">{ARCS.map(([mode, title]) => driveButton(mode, title))}</div></div>
-          <div className="mt-3 grid grid-cols-2 gap-2">{WHEELS.map(([name, position, sign], i) => <div key={name} className="rounded-lg bg-slate-50 px-2.5 py-2 text-[10px] text-slate-500"><b className="text-slate-700">{name}</b> · {position}<span className="float-right font-mono font-bold">{hardware.motors?.[i] ?? "—"}</span><span className="mt-1 block text-slate-400">Chiều tiến: PWM {sign}</span></div>)}</div>
-          <p className="mt-3 text-[10px] leading-relaxed text-slate-400">Hướng tính theo robot, nhìn từ sau ra trước. Con lăn lắp hình X. Mặc định PWM 20; mất lệnh làm mới thì Arduino dừng bánh sau tối đa 500 ms.</p>
-          {robot?.auto_rear && <p className="mt-2 text-xs text-amber-700">Tắt “Tự phân loại phía sau D18” để chạy bánh bằng MANUAL.</p>}
-        </div>
-        <div className="rounded-2xl bg-slate-950 p-4 text-white"><div className="flex items-center justify-between"><h3 className="flex items-center gap-2 text-xs font-semibold"><Cpu size={14} className="text-emerald-400"/>Nhật ký Python</h3><span className="text-[10px] text-slate-500">{hardware.pca === true ? "PCA đã khởi tạo" : ""}</span></div><div className="mt-3 max-h-[120px] space-y-2 overflow-auto text-[11px]">{robot?.log.length ? robot.log.slice(0, 8).map((entry, i) => <div key={`${entry.time}-${i}`} className="flex gap-3"><time className="shrink-0 font-mono text-slate-500">{entry.time}</time><span className="text-slate-300">{entry.text}</span></div>) : <p className="text-slate-500">Chưa có thao tác. Kết nối Python để nhận trạng thái thật.</p>}</div></div>
+      <div role="tabpanel" id="control-panel-drive" aria-labelledby="control-tab-drive" hidden={tab !== "drive"} tabIndex={0}>
+        <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="control-section-title"><Radio size={16}/>Di chuyển Mecanum</h3><p className="mt-1 text-xs text-slate-500">Giữ để chạy · thả để dừng</p></div><label className="flex items-center gap-2 text-xs text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => {const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n);}} className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center font-bold text-emerald-700"/></label></div>
+        <div className="drive-pad grid grid-cols-3 gap-2">{DIRECTIONS.map(([mode, title, symbol]) => mode === "STOP" ? <button key={mode} aria-label={title} onClick={() => void mutate({command:"XM"}, "command", true)} className="btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button> : driveButton(mode, title, symbol))}</div>
+        <div className="mt-2 grid grid-cols-2 gap-2">{TURNS.map(([mode,title,symbol]) => driveButton(mode,title,symbol))}</div>
+        {robot?.auto_rear && <p className="mt-3 text-xs text-amber-700">Tắt “Tự phân loại phía sau D18” ở Thùng & nắp để chạy bánh bằng tay.</p>}
+        <details className="control-details mt-4"><summary>Cua theo cung & trạng thái 4 bánh</summary><div className="mt-3 grid grid-cols-2 gap-2">{ARCS.map(([mode,title]) => driveButton(mode,title))}</div><div className="mt-3 grid grid-cols-2 gap-2">{WHEELS.map(([name,position,sign],i) => <div key={name} className="rounded-lg bg-slate-50 p-3 text-[10px] text-slate-500"><b>{name}</b> · {position}<span className="float-right font-mono font-bold">{hardware.motors?.[i] ?? "—"}</span><span className="mt-1 block">Chiều tiến: PWM {sign}</span></div>)}</div><p className="mt-3 text-[11px] text-slate-500">Hướng theo robot nhìn từ sau ra trước. Mất lệnh làm mới, Arduino dừng bánh sau tối đa 500 ms.</p></details>
+      </div>
+      <div role="tabpanel" id="control-panel-bins" aria-labelledby="control-tab-bins" hidden={tab !== "bins"} tabIndex={0}>
+        <h3 className="control-section-title mb-3"><Trash2 size={16}/>Chọn ngăn phân loại</h3>
+        <div className="grid grid-cols-2 gap-2">{BINS.map(b => {const pulse = robot?.config.bins[b.key] ?? b.pulse; const selected = hardware.joints?.p9 === pulse;
+          return <button disabled={!canMove} key={b.key} onClick={() => action(`SORT ${b.key}`)} className={`btn flex items-center gap-3 rounded-xl border p-3 text-left disabled:opacity-40 ${selected ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"}`}><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${b.tone}`}><b.Icon size={19}/></span><span><span className="block text-xs font-semibold">{b.title}</span><span className="mt-1 block text-[10px] text-slate-400">BIN {b.id} · {pulse} µs</span></span></button>;
+        })}</div><div className="mt-3 grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("LID OPEN")} className={button}><PackageOpen size={16}/>Mở nắp</button><button disabled={!canMove} onClick={() => action("LID CLOSE")} className={button}><Square size={14}/>Đóng nắp</button></div><p className="mt-2 text-[11px] text-slate-500">Chọn ngăn chỉ xoay thùng. Nắp và kẹp thao tác riêng.</p>
+        <div className="mt-5 grid grid-cols-2 gap-2">{[["D19","IR gắp vật"],["D18","Thùng rác"]].map(([pin,title]) => {const value = hardware.sensors?.[pin]; return <div key={pin} className={`rounded-xl border p-3 ${value === 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50"}`}><div className="text-[10px] text-slate-500">{title} · {pin}</div><div className="mt-1 text-xs font-semibold">{value === 0 ? "Có vật" : value === 1 ? "Không phát hiện" : "Chưa có dữ liệu"}</div></div>;})}</div>
+        <details className="control-details mt-3"><summary>Tự phân loại phía sau D18</summary><p className="mt-2 text-xs text-slate-500">D18 → nhìn sau → Modal → xoay ngăn → mở nắp. Đang giữ vật phía trước thì chờ lượt đó hoàn tất.</p><button disabled={!canMove} onClick={() => action(robot?.auto_rear ? "AUTO REAR OFF" : "AUTO REAR ON")} className={`${button} mt-3 w-full`}>{robot?.auto_rear ? "Đang bật · Tắt" : "Bật"}</button></details>
+      </div>
+      <div role="tabpanel" id="control-panel-auto" aria-labelledby="control-tab-auto" hidden={tab !== "auto"} tabIndex={0}>
+        <h3 className="control-section-title"><Radio size={16}/>Auto theo camera</h3>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">{autoMode ? mechanicsOn ? "Auto gửi lệnh tới tay, bốn bánh, thùng và nắp. Chuyển nút đỏ để tự điều khiển trong khi camera vẫn nhận diện." : "Camera vẫn nhận diện; lệnh dự kiến chưa gửi tới cơ khí. Chọn Cánh tay, Bánh xe hoặc Thùng & nắp để điều khiển." : "Chọn AUTO ở đầu màn hình để bật nhận diện và chọn quyền điều khiển cơ khí."}</p>
+        {!operatorReady && <p className="mt-3 text-xs text-amber-700">Kết nối Python V3.15 để dùng các nút AUTO mới.</p>}
+        <div role="status" className={`mt-3 rounded-xl p-3 text-xs ${autoState?.distance_ready ? "bg-emerald-100 text-emerald-900" : "bg-slate-50 text-slate-600"}`}>{autoState?.distance_ready ? "Đã đạt khoảng cách 25–30 cm · đã xác nhận cảm biến" : "Khoảng cách: chờ mẫu cảm biến hợp lệ"}{autoState?.tof_mm != null && ` · ${(autoState.tof_mm / 10).toFixed(1)} cm`}</div>
+        <p className="mt-3 text-xs" role="status">{autoState?.message || "AUTO chưa chạy"}</p>
+        <p className="mt-2 text-[11px] text-slate-500">S1 → S2 → xoay càng → đóng kẹp → nâng vật</p>
+        <p className="mt-2 text-[11px] text-slate-500">{autoState?.orientation?.angle_deg != null ? `Góc ảnh: ${autoState.orientation.angle_deg.toFixed(1)}° · D2 dự kiến ${autoState.orientation.pulse_us ?? "—"} µs` : autoState?.orientation?.reason || "Góc vật: chờ ảnh"}</p>
+        {operatorReady && !autoState?.orientation_enabled && <p className="mt-2 text-[11px] text-amber-700">Xoay theo hướng vật chưa bật: cần hiệu chuẩn camera → D2. Ở chế độ đỏ, đặt D2 trong Cánh tay trước khi gắp.</p>}
+        <div className="mt-4 rounded-xl border border-slate-200 p-3"><h3 className="text-xs font-bold">Lệnh AUTO dự kiến</h3><p className="mb-3 mt-1 text-[11px] text-slate-500">Nút đỏ: các lệnh này chưa gửi tới cơ khí.</p><ul className="space-y-2 text-xs">{autoState?.planned_commands?.length ? autoState.planned_commands.map((entry,i) => <li key={i}><b>{entry.component}:</b> {entry.command}</li>) : <li className="text-slate-500">Chờ ảnh mới và mục tiêu ổn định.</li>}</ul></div>
+        <div className="mt-3 rounded-xl border border-slate-200 p-3"><h3 className="text-xs font-bold">Lệnh Arduino đã nhận</h3><p className="mb-3 mt-1 text-[11px] text-slate-500">Xác nhận nhận lệnh, chưa phải vị trí đo thực tế.</p><ol className="max-h-44 space-y-2 overflow-auto font-mono text-[11px]">{robot?.command_trace?.length ? robot.command_trace.slice(0,16).map((entry,i) => <li key={i}>{entry.time} · {entry.source} · {entry.command}</li>) : <li className="text-slate-400">Chưa có lệnh được xác nhận.</li>}</ol></div>
+        <details className="control-details mt-3"><summary>Nhật ký Python</summary><div className="mt-3 space-y-2 text-[11px]">{robot?.log.length ? robot.log.slice(0,8).map((entry,i) => <div key={`${entry.time}-${i}`} className="flex gap-3"><time className="shrink-0 font-mono text-slate-400">{entry.time}</time><span>{entry.text}</span></div>) : <p className="text-slate-500">Kết nối Python để nhận trạng thái thật.</p>}</div></details>
       </div>
     </div>
   </section>;

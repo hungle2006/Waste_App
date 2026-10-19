@@ -1,6 +1,87 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root{color-scheme:light}*{box-sizing:border-box}html{background:radial-gradient(circle at 10% 10%,rgba(16,185,129,.10),transparent 28%),radial-gradient(circle at 90% 0%,rgba(59,130,246,.10),transparent 30%),#f5f7fb}body{margin:0;color:#102033;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.glass{background:rgba(255,255,255,.78);backdrop-filter:blur(18px);border:1px solid rgba(15,23,42,.08)}.camera-grid{background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:26px 26px}.btn{transition:transform .12s ease,background .12s ease,box-shadow .12s ease}.btn:active{transform:scale(.96)}
 
-.camera-panel:fullscreen{display:flex;flex-direction:column;width:100%;height:100%;border:0;border-radius:0;background:#101722}.camera-panel:fullscreen>div:first-child{flex-shrink:0;background:#fff}.camera-panel:fullscreen .camera-viewport{flex:1;min-height:0;aspect-ratio:auto}
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { background: #f1f5f4; }
+body { margin: 0; color: #102033; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, select, summary { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, [role="tabpanel"]:focus-visible { outline: 3px solid #34d399; outline-offset: 2px; }
+[hidden] { display: none !important; }
+.btn { transition: background .12s ease, border-color .12s ease; }
+.camera-grid { background-image: linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size: 26px 26px; }
+.operator-shell { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; max-width: 1920px; margin: auto; padding: 8px; padding-top: max(8px,env(safe-area-inset-top)); padding-bottom: max(8px,env(safe-area-inset-bottom)); gap: 8px; overflow: hidden; }
+.operator-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; }
+.brand-mark { display: flex; height: 36px; width: 36px; align-items: center; justify-content: center; border-radius: 12px; background: #102a26; color: #6ee7b7; }
+.mode-switch { display: flex; gap: 2px; padding: 3px; border: 1px solid #dce5e1; border-radius: 12px; background: #e7eeeb; }
+.mode-switch button { min-height: 36px; padding: 0 10px; border-radius: 9px; font-size: 10px; font-weight: 800; color: #64748b; }
+.mode-switch button[aria-pressed="true"] { color: #064e3b; background: white; box-shadow: 0 1px 3px #102a2610; }
+.header-connection { display: none; align-items: center; gap: 6px; font-size: 11px; }
+.emergency-button { display: flex; min-height: 42px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border-radius: 12px; background: #dc2626; color: white; font-size: 10px; font-weight: 800; }
+.emergency-button:hover { background: #b91c1c; }
+.operator-workspace { display: grid; flex: 1; min-height: 0; min-width: 0; grid-template-rows: minmax(150px,32%) minmax(0,1fr); gap: 8px; }
+.vision-column { display: flex; min-height: 0; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid #dce5e1; border-radius: 18px; background: white; }
+.camera-panel { display: flex; flex: 1; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; background: #101722; }
+.camera-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 8px; height: 37px; padding: 0 12px; border-bottom: 1px solid #ffffff12; color: #e2e8f0; }
+.camera-icon-button { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 8px; color: #94a3b8; }
+.camera-icon-button:hover { color: white; background: #ffffff10; }
+.camera-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.camera-viewport video { position: absolute; inset: 0; }
+.camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; text-align: center; color: #64748b; }
+.camera-placeholder > svg { display: none; }
+.vision-telemetry { display: grid; flex-shrink: 0; grid-template-columns: repeat(4,minmax(0,1fr)); padding: 8px 0; }
+.vision-telemetry > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; padding: 0 8px; border-right: 1px solid #eef2f0; }
+.vision-telemetry > div:last-child { border: 0; }
+.telemetry-label { font-size: 9px; color: #64748b; }
+.vision-telemetry strong { font-size: 10px; font-weight: 650; }
+.vision-summary { display: none; align-items: center; gap: 8px; border-top: 1px solid #eef2f0; padding: 10px 14px; font-size: 11px; color: #64748b; }
+.control-panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; border: 1px solid #dce5e1; border-radius: 18px; background: white; box-shadow: 0 4px 18px #102a2605; }
+.control-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 6px; padding: 12px; }
+.tool-button { display: flex; min-height: 36px; align-items: center; justify-content: center; gap: 5px; border: 1px solid #e2e8f0; border-radius: 10px; background: white; padding: 0 9px; font-size: 10px; font-weight: 650; }
+.tool-button:hover { background: #f8fafc; }
+.tool-button:disabled { opacity: .4; cursor: not-allowed; }
+.control-message { flex-shrink: 0; margin: 0; padding: 0 12px 8px; font-size: 10px; line-height: 1.4; max-height: 36px; overflow: auto; }
+.auto-toolbar { display: flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 0 12px 10px; }
+.control-tabs { display: grid; flex-shrink: 0; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; border-top: 1px solid #eef2f0; border-bottom: 1px solid #eef2f0; background: #f8faf9; padding: 4px 8px; }
+.control-tabs button { min-height: 39px; border-radius: 9px; padding: 0 2px; font-size: 11px; font-weight: 650; color: #64748b; }
+.control-tabs button.is-selected { background: #dff6eb; color: #047857; }
+.controls-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; padding: 14px 12px 20px; scrollbar-width: thin; scrollbar-color: #b7cdc2 transparent; }
+.control-section-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; }
+.control-section-title svg { color: #059669; }
+.joint-control { padding: 12px 0; }
+.control-details { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; }
+.control-details summary { min-height: 24px; cursor: pointer; font-size: 11px; font-weight: 650; color: #475569; }
+.camera-panel:fullscreen { width: 100%; height: 100%; border: 0; border-radius: 0; }
+.camera-panel:fullscreen .camera-viewport { flex: 1; }
+@media (min-width:640px) {
+  .operator-shell { padding: 12px; gap: 12px; }
+  .operator-header { min-height: 54px; }
+  .header-connection { display: flex; }
+  .mode-switch button { padding: 0 16px; font-size: 11px; }
+  .emergency-button { padding: 0 16px; font-size: 11px; }
+  .vision-telemetry { padding: 12px 0; }
+  .vision-telemetry > div { padding: 0 14px; }
+  .telemetry-label { font-size: 10px; }
+  .vision-telemetry strong { font-size: 12px; }
+}
+@media (min-width:960px), (min-width:700px) and (orientation:landscape) {
+  .operator-workspace { grid-template-rows: minmax(0,1fr); grid-template-columns: minmax(0,1fr) minmax(360px,44%); gap: 12px; }
+  .camera-heading { height: 46px; padding: 0 16px; }
+  .camera-placeholder > svg { display: block; }
+  .vision-summary { display: flex; }
+  .control-toolbar { padding: 14px; }
+  .controls-scroll { padding: 16px 16px 24px; }
+}
+@media (min-width:1440px) { .operator-workspace { grid-template-columns: minmax(0,1fr) 540px; } }
+@media (max-width:480px) { .brand-mark { display: none; } }
+@media (max-width:380px) { .operator-header h1 { font-size: 12px; } .mode-switch button { padding: 0 7px; font-size: 9px; } .emergency-button { padding: 0 7px; font-size: 9px; } .operator-header { gap: 5px; } }
+@media (max-height:500px) and (orientation:landscape) {
+  .operator-shell { padding: 6px; gap: 6px; }
+  .operator-header { min-height: 38px; }
+  .brand-mark { height: 30px; width: 30px; }
+  .emergency-button { min-height: 34px; }
+  .operator-header p { display: none; }
+  .control-toolbar { padding: 8px 12px; }
+  .control-message { display: none; }
+}

@@ -4,10 +4,12 @@
 
 ## Điều khiển
 
+Camera và bảng cơ khí nằm trong cùng một màn hình: màn hình rộng đặt cạnh nhau, điện thoại dọc đặt camera phía trên. Chỉ nội dung bảng cơ khí cuộn; camera, nút dừng và các nhóm điều khiển luôn hiện. Chọn **Cánh tay**, **Bánh xe**, **Thùng & nắp** hoặc **Auto & lệnh**. Đổi nhóm không tạo lại phiên camera/robot; đang giữ bánh thì đổi nhóm sẽ gửi XM để dừng.
+
 1. Chạy `python main.py` trên máy robot, rồi bấm **Kết nối Python**.
 2. Mở tab AUTO. **Bắt đầu AUTO** chờ ACK của Python.
 3. Nút xanh: Auto điều khiển tay, bánh, ngăn và nắp. Nút đỏ: Python hủy chuyển động Auto đang chờ, phanh bánh, giữ xung servo; camera tiếp tục nhận diện và hiển thị lệnh dự kiến. Bảng cơ khí cho phép điều khiển tay.
-4. Ở chế độ đỏ, **Gắp và nâng vật** chạy chuỗi đã kiểm tra vị trí/cảm biến. **Thả vật vào thùng** dùng ngăn đã xác nhận khi gắp. Chưa đủ điều kiện thì Python từ chối và giữ tại chỗ.
+4. Ở chế độ đỏ, mở nhóm **Cánh tay**. **Gắp và nâng vật** chạy chuỗi đã kiểm tra vị trí/cảm biến. **Thả vật vào thùng** dùng ngăn đã xác nhận khi gắp. Chưa đủ điều kiện thì Python từ chối và giữ tại chỗ.
 5. DỪNG/STOP hủy cả Auto và chuỗi gắp/thả; nó khác nút đỏ.
 
 Nút đổi màu theo trạng thái Python đã xác nhận. Chuyển xanh/đỏ không có popup thông báo thành công. Dữ liệu mất liên lạc không được tiếp tục hiển thị là khoảng cách đã đạt. Xung Arduino nhận được không phải phản hồi góc thực tế.
@@ -23,7 +25,7 @@ npm run build
 npm run dev
 ```
 
-Bốn kiểm thử React DOM kiểm tra chuyển quyền, D2, xác nhận khoảng cách, gắp/thả, STOP và giữ/nhả bánh. Trạng thái và ACK trong kiểm thử là mô phỏng, không gửi lệnh tới robot. Build kiểm tra TypeScript. Chưa kiểm chứng camera, USB hoặc tải cơ khí thật trong môi trường phát triển.
+Bảy kiểm thử React DOM kiểm tra chuyển quyền, D2, xác nhận khoảng cách, gắp/thả, STOP, giữ/nhả bánh, dừng bánh khi đổi nhóm, điều hướng bàn phím và giữ nguyên phiên camera/robot khi đổi giao diện. Trạng thái và ACK trong kiểm thử là mô phỏng, không gửi lệnh tới robot. Build kiểm tra TypeScript. Chưa kiểm chứng camera, USB hoặc tải cơ khí thật trong môi trường phát triển.
 
 ## Cấu hình Vercel
 
