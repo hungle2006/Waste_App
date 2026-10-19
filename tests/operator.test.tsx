@@ -1,13 +1,14 @@
 import React from 'react';
 import {render,screen,fireEvent,waitFor,cleanup,act} from '@testing-library/react';
 import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
-const fake=vi.hoisted(()=>({state:null as any,onState:null as any,requests:[] as any[],clients:0,rooms:0,disconnects:0}));
+const fake=vi.hoisted(()=>({state:null as any,onState:null as any,requests:[] as any[],clients:0,rooms:0,disconnects:0,beforeRequest:null as null | ((action:string,body:any)=>Promise<void>)}));
 vi.mock('@/lib/robot-realtime',()=>({RobotRealtimeClient:class {
   constructor(onState:any,private onTransport:any){fake.onState=onState;fake.clients++}
   start(){this.onTransport(true,true);fake.onState(structuredClone(fake.state))}
   close(){}
   async request(action:string,body:any={}){
     fake.requests.push({action,body});const a=fake.state.auto;
+    if(fake.beforeRequest)await fake.beforeRequest(action,body);
     if(action==='operator'){
       if(body.command==='AUTO START'){a.auto_running=true;fake.state.auto_running=a.mechanics_enabled}
       if(body.command==='MECHANICS OFF'){a.mechanics_enabled=false;a.target_fresh=true;fake.state.auto_running=false;fake.state.epoch++}
@@ -27,6 +28,7 @@ import Page from '../app/page';
 const chooseTab=(name:string)=>fireEvent.click(screen.getByRole('tab',{name}));
 beforeEach(()=>{
  fake.requests=[];
+ fake.beforeRequest=null;
  fake.clients=0;fake.rooms=0;fake.disconnects=0;
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({url:'wss://camera.example',token:'test-only'})}));
  const pose={p1:1300,p10:950,p11:1250,d2:2100,d3:600,p4:500,p9:1900};
@@ -39,6 +41,38 @@ afterEach(()=>{cleanup();vi.unstubAllGlobals()});
 const mount=()=>render(<MechanicalControl active autoMode registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);
 async function connect(){fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));}
 describe('Operator controls with robot ACK',()=>{
+ it('brakes held wheels before submitting a mode change',async()=>{
+  fake.state.auto.mechanics_enabled=false;fake.state.auto.auto_running=true;
+  mount();await connect();chooseTab('Bánh xe');
+  fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='DRIVE FORWARD')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Quyền điều khiển cơ khí của Auto'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='MECHANICS ON')).toBe(true));
+  const commands=fake.requests.map(x=>x.body.command);
+  expect(commands.indexOf('XM')).toBeLessThan(commands.indexOf('MECHANICS ON'));
+ });
+ it('STOP cancels a mode change waiting for the wheel brake ACK',async()=>{
+  fake.state.auto.mechanics_enabled=false;fake.state.auto.auto_running=true;
+  let finishBrake:()=>void=()=>{};
+  fake.beforeRequest=async(_action,body)=>{
+   if(body.command==='XM')await new Promise<void>(resolve=>{finishBrake=resolve});
+  };
+  mount();await connect();chooseTab('Bánh xe');
+  fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='DRIVE FORWARD')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Quyền điều khiển cơ khí của Auto'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='XM')).toBe(true));
+  fireEvent.click(screen.getByRole('button',{name:'Dừng AUTO'}));
+  await waitFor(()=>expect(fake.state.stopped).toBe(true));
+  await act(async()=>{finishBrake()});
+  expect(fake.requests.some(x=>x.body.command==='MECHANICS ON')).toBe(false);
+ });
+ it('disables image-guided grasp when the gripper is already closed',async()=>{
+  fake.state.auto.mechanics_enabled=false;fake.state.auto.target_fresh=true;
+  fake.state.hardware.joints.d3=fake.state.config.grip.close;
+  mount();await connect();
+  expect(screen.getByRole('button',{name:'Gắp và nâng vật'}).hasAttribute('disabled')).toBe(true);
+ });
  it('green locks manual, red keeps AUTO and permits D2, no toggle notice',async()=>{
   mount();await connect();fireEvent.click(screen.getByRole('button',{name:'Bắt đầu AUTO'}));
   chooseTab('Bánh xe');

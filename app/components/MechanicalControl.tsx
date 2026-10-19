@@ -143,7 +143,8 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   }, [applyState, onCommand, request]);
 
   const releaseDrive = useCallback(() => {
-    if (driveRef.current) void mutate({ command: "XM" }, "command", true);
+    if (driveRef.current) return mutate({ command: "XM" }, "command", true);
+    return Promise.resolve(true);
   }, [mutate]);
 
   const startDrive = (mode: string) => {
@@ -264,7 +265,11 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const wristAngle = ready && autoState?.wrist?.angle_deg != null ? autoState.wrist.angle_deg : wristPulse != null && wristPulse >= 500 && wristPulse <= 2500 ? (wristPulse-2100)*(wristPulse < 2100 ? 90/1600 : 60/400) : null;
   const wristLabel = wristAngle == null ? "Chưa có góc" : Math.abs(wristAngle) < .1 ? "Thẳng Oy · 0°" : `${wristAngle < 0 ? "Trái" : "Phải"} ${Math.abs(wristAngle).toFixed(0)}°`;
   const mechanicsOn = autoState?.mechanics_enabled !== false;
-  const runOperator = (command: string) => { releaseDrive(); void mutate({command}, "operator"); };
+  const runOperator = async (command: string) => {
+    const braking = releaseDrive();
+    const generation = generationRef.current;
+    if (await braking && generation === generationRef.current) void mutate({command}, "operator");
+  };
   const selectTab = (next: ControlTab) => {
     releaseDrive();
     setTab(next);
@@ -322,7 +327,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           <button type="button" disabled={!advancedReady || !canMove || !autoState?.lift_ready} onClick={() => runOperator("LIFT")} className={`${button} mt-2 w-full`}>Nâng / rút tay · giữ góc kẹp</button>
           <p className="mt-2 text-[10px] text-slate-500">{autoState?.held_bin ? `Ngăn thả đã lưu: BIN ${autoState.held_bin}. ` : "Dùng ngăn bạn đang chọn trong Thùng & nắp. "}VL53 {((autoState?.sensor_min_mm ?? 250)/10).toFixed(0)}–{((autoState?.sensor_max_mm ?? 300)/10).toFixed(0)} cm, 3 mẫu mới; D19 xác nhận mới đóng kẹp.</p>
         </div>
-        {autoMode && <button className={`${button} mt-2 w-full`} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button>}
+        {autoMode && <button className={`${button} mt-2 w-full`} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh || hardware.joints?.d3 !== robot?.config.grip.open} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button>}
         <div className="mt-3 divide-y divide-slate-100">{JOINTS.map(j => {
           const [min, max] = robot?.config.limits[j.id] ?? [500, j.id === "p1" ? 3500 : 2500];
           const submit = () => { if (canMove) void mutate({joint: j.id, pulse_us: draftRef.current[j.id]}); };
