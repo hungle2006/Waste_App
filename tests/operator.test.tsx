@@ -89,9 +89,11 @@ describe('Operator controls with robot ACK',()=>{
  it('shows range only after robot confirmation; routes grasp/release/STOP',async()=>{
   fake.state.auto.mechanics_enabled=false;fake.state.auto.target_fresh=true;mount();await connect();
   chooseTab('Auto & lệnh');
-  expect(screen.queryByText('Đã đạt khoảng cách 25–30 cm · đã xác nhận cảm biến')).toBeNull();
+  expect(screen.queryByText('Đã đạt khoảng cách 20–25 cm · đã xác nhận cảm biến')).toBeNull();
   await act(async()=>{fake.state.auto.distance_ready=true;fake.onState(structuredClone(fake.state));});
-  expect(screen.getByText('Đã đạt khoảng cách 25–30 cm · đã xác nhận cảm biến')).toBeTruthy();
+  expect(screen.getByText('Đã đạt khoảng cách 20–25 cm · đã xác nhận cảm biến')).toBeTruthy();
+  await act(async()=>{fake.state.auto.sensor_min_mm=220;fake.state.auto.sensor_max_mm=240;fake.onState(structuredClone(fake.state));});
+  expect(screen.getByText('Đã đạt khoảng cách 22–24 cm · đã xác nhận cảm biến')).toBeTruthy();
   chooseTab('Cánh tay');
   fireEvent.click(screen.getByRole('button',{name:'Gắp và nâng vật'}));
   await waitFor(()=>expect(fake.requests.some(x=>x.action==='operator'&&x.body.command==='GRASP')).toBe(true));
