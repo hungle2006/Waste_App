@@ -298,11 +298,11 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         </div>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <button disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button"><Link2 size={14}/><span>Kết nối Python</span></button>
+        <button aria-label="Kết nối Python" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
     </div>
-    <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-2"><span className="text-[10px] text-slate-500">{autoState?.assist_running ? "Đang thực hiện chu trình gắp/thả" : "Giữ vị trí: giữ xung tay, phanh bánh"}</span><button type="button" disabled={!advancedReady} onClick={() => void mutate({command:"HOLD"},"operator",true)} className="tool-button shrink-0"><Pause size={13}/>Giữ vị trí</button></div>
+    <div className="control-hold-bar flex shrink-0 items-center justify-between gap-2 px-3 pb-2"><span className="text-[10px] text-slate-500">{autoState?.assist_running ? "Đang thực hiện chu trình gắp/thả" : "Giữ vị trí: giữ xung tay, phanh bánh"}</span><button type="button" disabled={!advancedReady} onClick={() => void mutate({command:"HOLD"},"operator",true)} className="tool-button shrink-0"><Pause size={13}/>Giữ vị trí</button></div>
     {ready && robot.stopped && <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800"><span>Cơ khí đang khóa sau STOP</span><button disabled={robot.busy || pending} onClick={() => action("RESUME")} className="tool-button !border-emerald-200 !bg-emerald-600 !text-white"><Check size={14}/>Cho phép điều khiển</button></div>}
     <p role="status" className={`control-message ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Thiếu cấu hình Supabase của app." : message || (brokerOnline ? "Kết nối Python để nhận trạng thái và điều khiển robot." : "Đang kết nối kênh robot…")}</p>
     {autoMode && <div className="auto-toolbar">

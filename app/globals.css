@@ -83,5 +83,101 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .emergency-button { min-height: 34px; }
   .operator-header p { display: none; }
   .control-toolbar { padding: 8px 12px; }
-  .control-message { display: none; }
+}
+
+/* Touch controls keep their labels readable without remounting the camera. */
+.emergency-short, .connect-short { display: none; }
+.gift-copy { overflow-wrap: anywhere; }
+.gift-copy [role="status"] { max-height: 4.2em; overflow-y: auto; }
+.camera-panel[data-expanded="true"], .camera-panel:fullscreen {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+@media (max-width:959px) {
+  .operator-shell {
+    padding-left: max(8px,env(safe-area-inset-left));
+    padding-right: max(8px,env(safe-area-inset-right));
+  }
+  .operator-header { min-height: 50px; gap: 8px; }
+  .operator-brand { flex: 1; min-width: 0; }
+  .operator-brand h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .operator-brand p, .brand-mark, .header-connection { display: none; }
+  .mode-switch { flex-shrink: 0; }
+  .mode-switch button { min-width: 52px; min-height: 44px; padding: 0 8px; font-size: 11px; }
+  .emergency-button { min-height: 48px; padding: 0 10px; font-size: 12px; }
+  .emergency-short, .connect-short { display: inline; }
+  .emergency-label, .connect-label { display: none; }
+  .camera-heading { height: 44px; padding: 0 10px; }
+  .camera-heading h2 { font-size: 13px; }
+  .camera-heading [role="status"] { font-size: 11px; }
+  .camera-icon-button { width: 44px; height: 44px; }
+  .camera-placeholder p { font-size: 12px; }
+  .camera-placeholder button { min-height: 44px; margin-top: 8px; font-size: 12px; }
+  .gift-bar { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 8px 10px; }
+  .gift-title { display: none; }
+  .gift-copy [role="status"] { margin: 0; font-size: 12px; line-height: 1.4; }
+  .gift-actions { align-items: center; }
+  .gift-stop { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  .gift-dispense { min-height: 44px; justify-content: center; padding: 0 10px; font-size: 13px; }
+  .vision-telemetry { min-height: 44px; align-items: center; padding: 5px 0; }
+  .vision-telemetry > div { padding: 0 7px; }
+  .telemetry-label { font-size: 10px; }
+  .vision-telemetry strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .control-toolbar { gap: 6px; padding: 10px; }
+  .control-toolbar > div:first-child { flex: 1; min-width: 0; }
+  .control-toolbar > div:first-child > svg { display: none; }
+  .control-toolbar h2 { font-size: 13px; }
+  .control-toolbar p { font-size: 11px; }
+  .control-panel button { min-height: 44px; font-size: 12px; line-height: 1.35; }
+  .control-panel button svg { flex-shrink: 0; }
+  .tool-button { min-width: 44px; padding-left: 10px; padding-right: 10px; }
+  .control-hold-bar { padding: 0 10px 6px; }
+  .control-hold-bar > span { font-size: 11px; line-height: 1.4; }
+  .control-message { margin: 0; padding: 0 10px 8px; font-size: 12px; line-height: 1.4; max-height: 60px; overflow-y: auto; overflow-wrap: anywhere; }
+  .auto-toolbar { flex-wrap: wrap; padding: 0 10px 8px; }
+  .control-tabs { padding: 4px; gap: 2px; }
+  .control-tabs button { min-width: 0; padding: 0 3px; font-size: 12px; }
+  .controls-scroll { padding: 14px 10px max(24px,env(safe-area-inset-bottom)); }
+  .control-section-title { font-size: 15px; }
+  .controls-scroll p { font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+  .control-panel input[type="number"], .control-panel select { min-height: 44px; font-size: 16px; }
+  .joint-control label { font-size: 13px; }
+  .joint-control input[type="range"] { height: 44px; }
+  .drive-pad button { min-height: 68px; }
+  .control-details summary { display: flex; align-items: center; min-height: 44px; font-size: 13px; }
+}
+/* Portrait: one page scroll; the live camera and controls stay together. */
+@media (max-width:699px), (max-width:959px) and (orientation:portrait) {
+  .operator-shell {
+    --mobile-camera-height: clamp(280px,42svh,370px);
+    height: auto; min-height: 100vh; min-height: 100svh; overflow: visible;
+  }
+  .operator-workspace { display: flex; flex: none; flex-direction: column; overflow: visible; }
+  .vision-column {
+    position: sticky; top: 0; z-index: 30;
+    height: var(--mobile-camera-height); min-height: var(--mobile-camera-height);
+    flex: none; box-shadow: 0 5px 20px #102a2614;
+  }
+  .vision-summary { display: none; }
+  .control-panel { flex: none; overflow: visible; }
+  .control-tabs { position: sticky; top: calc(var(--mobile-camera-height) + 8px); z-index: 20; box-shadow: 0 4px 10px #102a2608; }
+  .controls-scroll { flex: none; overflow: visible; }
+}
+/* A landscape phone uses both halves of the screen with independent control scrolling. */
+@media (max-width:959px) and (orientation:landscape) {
+  .operator-shell { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; gap: 6px; }
+  .operator-workspace { display: grid; flex: 1; grid-template-rows: minmax(0,1fr); grid-template-columns: minmax(0,42%) minmax(0,1fr); gap: 8px; min-height: 0; }
+  .vision-column { position: static; height: auto; min-height: 0; }
+  .vision-summary { display: none; }
+  .control-panel { overflow: hidden; min-height: 0; }
+  .control-tabs { position: static; box-shadow: none; }
+  .controls-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+}
+@media (max-width:699px) and (orientation:landscape) {
+  .gift-bar { grid-template-columns: minmax(0,1fr); gap: 4px; padding: 6px; }
+  .gift-copy [role="status"] { max-height: 2.8em; font-size: 11px; }
+  .gift-dispense { flex: 1; }
+  .gift-actions { width: 100%; }
 }
