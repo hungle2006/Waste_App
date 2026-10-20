@@ -97,6 +97,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 }
 @media (max-width:959px) {
   .operator-shell {
+    padding-top: max(8px,env(safe-area-inset-top));
+    padding-bottom: max(8px,env(safe-area-inset-bottom));
     padding-left: max(8px,env(safe-area-inset-left));
     padding-right: max(8px,env(safe-area-inset-right));
   }
@@ -156,14 +158,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   }
   .operator-workspace { display: flex; flex: none; flex-direction: column; overflow: visible; }
   .vision-column {
-    position: sticky; top: 0; z-index: 30;
+    position: sticky; top: env(safe-area-inset-top,0px); z-index: 30;
     height: var(--mobile-camera-height); min-height: var(--mobile-camera-height);
     flex: none; box-shadow: 0 5px 20px #102a2614;
   }
   .vision-summary { display: none; }
   .control-panel { flex: none; overflow: visible; }
-  .control-tabs { position: sticky; top: calc(var(--mobile-camera-height) + 8px); z-index: 20; box-shadow: 0 4px 10px #102a2608; }
+  .control-tabs { position: sticky; top: calc(env(safe-area-inset-top,0px) + var(--mobile-camera-height) + 8px); z-index: 20; box-shadow: 0 4px 10px #102a2608; }
   .controls-scroll { flex: none; overflow: visible; }
+  .control-panel input, .control-panel select { scroll-margin-top: calc(env(safe-area-inset-top,0px) + var(--mobile-camera-height) + 72px); }
 }
 /* A landscape phone uses both halves of the screen with independent control scrolling. */
 @media (max-width:959px) and (orientation:landscape) {
