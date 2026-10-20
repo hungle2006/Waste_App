@@ -184,3 +184,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .gift-dispense { flex: 1; }
   .gift-actions { width: 100%; }
 }
+
+/* On short landscape screens, let the toolbar scroll away instead of squeezing the controls. */
+@media (max-width:959px) and (max-height:500px) and (orientation:landscape) {
+  .control-panel { display: block; overflow-y: auto; overscroll-behavior-y: contain; }
+  .control-tabs { position: sticky; top: 0; z-index: 20; }
+  .controls-scroll { overflow: visible; }
+}
