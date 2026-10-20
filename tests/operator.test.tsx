@@ -269,4 +269,22 @@ describe('D22 gift control inside the camera panel',()=>{
   await waitFor(()=>expect(panel.textContent).toContain('Cần nạp firmware D22'));
   expect(fake.requests.filter(x=>x.body.command==='GIFT DISPENSE')).toHaveLength(1);
  });
+ it.each(['unsupported','rejected'])('expands in-page when fullscreen is %s and can exit',async(kind)=>{
+  render(<Page/>);
+  const panel=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot').closest('.camera-panel') as HTMLElement;
+  if(kind==='rejected')Object.defineProperty(panel,'requestFullscreen',{configurable:true,value:vi.fn().mockRejectedValue(Error('Not allowed'))});
+  const toggle=screen.getByRole('button',{name:'Bật hoặc tắt toàn màn hình camera'});
+  fireEvent.click(toggle);
+  await waitFor(()=>expect(panel.dataset.expanded).toBe('true'));
+  expect(panel.style.position).toBe('fixed');
+  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà',exact:true}))).toBe(true);
+  expect(panel.contains(screen.getByRole('button',{name:'Dừng robot tại camera'}))).toBe(true);
+  fireEvent.keyDown(document,{key:'Escape'});
+  expect(panel.dataset.expanded).toBe('false');
+  fireEvent.click(toggle);
+  await waitFor(()=>expect(panel.dataset.expanded).toBe('true'));
+  fireEvent.click(toggle);
+  expect(panel.dataset.expanded).toBe('false');
+  expect(fake.requests).toHaveLength(0);
+ });
 });

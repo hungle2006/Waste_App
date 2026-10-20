@@ -15,16 +15,22 @@ function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, 
   gift?: GiftState; giftAllowed: boolean; giftPending: boolean; giftError: string; onGift: () => void; onStop: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [fullscreenError, setFullscreenError] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => {if (event.key === "Escape") setExpanded(false);};
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [expanded]);
   const toggleFullscreen = async () => {
+    if (expanded) {setExpanded(false);return;}
     try {
-      setFullscreenError("");
       if (document.fullscreenElement === panelRef.current) await document.exitFullscreen();
       else if (panelRef.current?.requestFullscreen) await panelRef.current.requestFullscreen();
-      else setFullscreenError("Trình duyệt chưa hỗ trợ toàn màn hình.");
-    } catch {setFullscreenError("Trình duyệt chưa hỗ trợ toàn màn hình.");}
+      else setExpanded(true);
+    } catch {setExpanded(true);}
   };
-  return <div ref={panelRef} className="camera-panel">
+  return <div ref={panelRef} className="camera-panel" data-expanded={expanded} style={expanded ? {position:"fixed",inset:0,zIndex:100,width:"100vw",height:"100dvh",borderRadius:0} : undefined}>
     <div className="camera-heading">
       <div className="flex min-w-0 items-center gap-2"><Camera size={17} className="text-emerald-400"/><h2 className="text-xs font-semibold">Camera robot</h2></div>
       <div className="flex items-center gap-2"><span role="status" className={`text-[10px] font-bold ${trackOnline ? "text-emerald-400" : "text-slate-400"}`}>{trackOnline ? "● TRỰC TIẾP" : connected === false ? "○ MẤT KẾT NỐI" : "○ ĐANG CHỜ"}</span><button type="button" onClick={toggleFullscreen} aria-label="Bật hoặc tắt toàn màn hình camera" title="Toàn màn hình camera" className="camera-icon-button"><Maximize size={15}/></button></div>
@@ -37,7 +43,7 @@ function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, 
       <div className="min-w-0"><p className="text-xs font-semibold text-white">Nhận quà từ robot</p><p role="status" aria-live="polite" className="mt-1 text-[11px] text-slate-300">{giftError ? giftError : giftPending ? "Đang gửi yêu cầu…" : gift?.busy ? "Đang phát quà…" : gift?.message || "Kết nối Python để nhận quà"}</p></div>
       <div className="flex shrink-0 gap-2"><button type="button" aria-label="Dừng robot tại camera" onClick={onStop} className="min-h-11 rounded-xl border border-red-400 px-3 text-xs font-bold text-red-200"><CircleStop size={18}/></button><button type="button" disabled={!giftAllowed || giftPending} onClick={onGift} className="flex min-h-12 items-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-bold text-slate-950 disabled:opacity-40"><Gift size={19}/>{gift?.busy || giftPending ? "Đang phát quà…" : "Đổi quà"}</button></div>
     </div>
-    {fullscreenError && <p role="status" className="px-3 py-2 text-xs text-slate-400">{fullscreenError}</p>}
+    {expanded && <p role="status" className="shrink-0 px-3 py-2 text-xs text-slate-400">Nhấn Esc hoặc nút mở rộng để thu nhỏ camera.</p>}
   </div>;
 }
 
