@@ -14,7 +14,9 @@ vi.mock('@/lib/robot-realtime',()=>({RobotRealtimeClient:class {
       if(body.command==='MECHANICS OFF'){a.mechanics_enabled=false;a.target_fresh=true;fake.state.auto_running=false;fake.state.epoch++}
       if(body.command==='MECHANICS ON'){a.mechanics_enabled=true;fake.state.auto_running=a.auto_running;fake.state.epoch++}
     }
-    if(action==='command'&&body.command==='STOP'){a.auto_running=false;fake.state.auto_running=false;fake.state.stopped=true}
+    if(action==='command'&&body.command==='GIFT DISPENSE'){fake.state.gift.busy=true;fake.state.gift.phase='opening';fake.state.gift.message='Đang mở cửa phát quà'}
+    if(action==='command'&&body.command==='STOP'){if(fake.state.gift){fake.state.gift.busy=false;fake.state.gift.phase='interrupted';}
+a.auto_running=false;fake.state.auto_running=false;fake.state.stopped=true}
     fake.onState(structuredClone(fake.state));return structuredClone(fake.state)
   }
 }}));
@@ -33,6 +35,7 @@ beforeEach(()=>{
  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({url:'wss://camera.example',token:'test-only'})}));
  const pose={p1:1300,p10:950,p11:1250,d2:2100,d3:600,p4:500,p9:1900};
  fake.state={connected:true,fresh:true,stopped:false,busy:false,epoch:3,job:'Ready',progress:100,simulation:true,auto_rear:false,auto_running:false,
+ gift:{protocol:1,available:true,busy:false,phase:'idle',message:'Sẵn sàng nhận lệnh Đổi quà'},
  hardware:{joints:{...pose},motors:[0,0,0,0],sensors:{D19:1,D18:1}},log:[],command_trace:[],
  config:{limits:{p1:[500,3500],p10:[500,2500],p11:[500,2500],d2:[500,2500]},poses:{SEARCH:{...pose},SETUP:{...pose},PLACE:{...pose},REAR:{...pose}},grip:{open:600,close:1400},bins:{RECYCLE:2350,ORGANIC:1000,HAZARD:1450,OTHER:1900}},
  auto:{operator_protocol:1,mechanics_enabled:true,auto_running:false,planned_commands:[],target_fresh:false,distance_ready:false}};
@@ -213,3 +216,57 @@ describe('Operator controls with robot ACK',()=>{
  });
 });
 
+
+
+
+describe('D22 gift control inside the camera panel',()=>{
+ it('submits one gift request and locks repeated clicks until robot completion',async()=>{
+  render(<Page/>);
+  const gift=await screen.findByRole('button',{name:'Đổi quà',exact:true});
+  await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));
+  fireEvent.click(gift);fireEvent.click(gift);
+  await waitFor(()=>expect(fake.requests.filter(x=>x.body.command==='GIFT DISPENSE')).toHaveLength(1));
+  expect(screen.getByRole('button',{name:'Đang phát quà…'}).hasAttribute('disabled')).toBe(true);
+  await act(async()=>{fake.state.gift.busy=false;fake.state.gift.phase='done';fake.state.gift.message='Đã hoàn tất chu trình phát quà';fake.onState(structuredClone(fake.state));});
+  expect(screen.getByRole('button',{name:'Đổi quà',exact:true}).hasAttribute('disabled')).toBe(false);
+  expect(screen.getByText('Đã hoàn tất chu trình phát quà')).toBeTruthy();
+ });
+ it('can dispense with green AUTO without changing mechanics ownership',async()=>{
+  fake.state.auto.auto_running=true;fake.state.auto_running=true;fake.state.busy=true;
+  render(<Page/>);
+  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));fireEvent.click(gift);
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='GIFT DISPENSE')).toBe(true));
+  expect(fake.state.auto_running).toBe(true);
+  expect(fake.requests.some(x=>['STOP','MECHANICS OFF'].includes(x.body.command))).toBe(false);
+ });
+ it.each(['offline','stopped','old firmware'])('blocks gift requests when %s',async(kind)=>{
+  if(kind==='offline')fake.state.fresh=false;
+  if(kind==='stopped')fake.state.stopped=true;
+  if(kind==='old firmware')fake.state.gift.available=false;
+  render(<Page/>);
+  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  expect(gift.hasAttribute('disabled')).toBe(true);fireEvent.click(gift);
+  expect(fake.requests.some(x=>x.body.command==='GIFT DISPENSE')).toBe(false);
+ });
+ it('expands the complete camera panel containing the gift and STOP buttons',async()=>{
+  render(<Page/>);
+  const video=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot');
+  const panel=video.closest('.camera-panel') as HTMLElement;
+  const enter=vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(panel,'requestFullscreen',{configurable:true,value:enter});
+  fireEvent.click(screen.getByRole('button',{name:'Bật hoặc tắt toàn màn hình camera'}));
+  await waitFor(()=>expect(enter).toHaveBeenCalledTimes(1));
+  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà',exact:true}))).toBe(true);
+  expect(panel.contains(screen.getByRole('button',{name:'Dừng robot tại camera'}))).toBe(true);
+ });
+ it('shows a rejected gift request inside the camera panel',async()=>{
+  fake.beforeRequest=async(_action,body)=>{if(body.command==='GIFT DISPENSE')throw Error('Cần nạp firmware D22')};
+  render(<Page/>);
+  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));fireEvent.click(gift);
+  const panel=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot').closest('.camera-panel')!;
+  await waitFor(()=>expect(panel.textContent).toContain('Cần nạp firmware D22'));
+  expect(fake.requests.filter(x=>x.body.command==='GIFT DISPENSE')).toHaveLength(1);
+ });
+});

@@ -1,3 +1,8 @@
+export type GiftState = {
+  protocol?: number; available?: boolean; pin?: number; busy?: boolean;
+  phase?: string; message?: string; cycles?: number; open_us?: number;
+  close_us?: number; hold_ms?: number; last_pulse_us?: number | null;
+};
 import { makeSupabase } from "./supabase";
 
 export type AutoState = {
@@ -14,7 +19,7 @@ export type AutoState = {
 };
 export type RobotRealtimeState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean; simulation: boolean;
-  auto?: AutoState; auto_running?: boolean; command_trace?: {time: string; command: string; source: string; delivery: string}[];
+  gift?: GiftState; auto?: AutoState; auto_running?: boolean; command_trace?: {time: string; command: string; source: string; delivery: string}[];
   epoch: number; job: string; progress: number; auto_rear: boolean;
   hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number>; tof?: {valid?: boolean; mm?: number; age_ms?: number; present?: boolean} };
   config: { limits: Record<string, [number, number]>; poses: Record<string, Record<string, number>>;
@@ -123,3 +128,4 @@ export class RobotRealtimeClient {
     setTimeout(() => { if (channel && this.supabase) void this.supabase.removeChannel(channel); }, 100);
   }
 }
+

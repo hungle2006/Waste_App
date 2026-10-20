@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RobotRealtimeClient, type AutoState, type RobotRealtimeState } from "@/lib/robot-realtime";
+import { RobotRealtimeClient, type AutoState, type GiftState, type RobotRealtimeState } from "@/lib/robot-realtime";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleStop, Grip, Leaf, Link2, PackageOpen, Pause, Radio,
   Recycle, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
@@ -21,12 +21,13 @@ type Config = {
 type RobotState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean;
   simulation: boolean; epoch: number; job: string; progress: number; auto_rear: boolean;
-  auto_running?: boolean; auto?: AutoState; command_trace?: RobotRealtimeState["command_trace"];
+  gift?: GiftState; auto_running?: boolean; auto?: AutoState; command_trace?: RobotRealtimeState["command_trace"];
   hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number> };
   config: Config; log: { time: string; text: string }[];
 };
 type Payload = { command: string; speed?: number } | { joint: Joint; pulse_us: number } | { name: Pose; values: Record<"p1" | "p10" | "p11", number> };
 type Props = { active: boolean; autoMode?: boolean; onRobotState?: (s: RobotRealtimeState) => void; registerStop: (fn: (() => void) | null) => void;
+  registerGift?: (fn: (() => Promise<boolean>) | null, pending: boolean) => void;
   onBinChange: (bin: number | null) => void; onCommand: (message: string) => void };
 
 const JOINTS: { id: Joint; name: string; sub: string; value: number }[] = [
@@ -59,7 +60,7 @@ const ARCS = [["ARC_FORWARD_LEFT", "Tiến cua trái"], ["ARC_FORWARD_RIGHT", "T
 const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["M3", "Sau phải", "−"], ["M4", "Trước trái", "+"]];
 const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40";
 
-export default function MechanicalControl({ active, autoMode = false, onRobotState, registerStop, onBinChange, onCommand }: Props) {
+export default function MechanicalControl({ active, autoMode = false, onRobotState, registerStop, registerGift, onBinChange, onCommand }: Props) {
   const [robot, setRobot] = useState<RobotState | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [connected, setConnected] = useState(false);
@@ -79,6 +80,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const robotRef = useRef<RobotState | null>(null);
   const draftRef = useRef<Record<Joint, number>>(INITIAL);
   const pendingRef = useRef(false);
+  const lastErrorRef = useRef("");
   const pollingRef = useRef(false);
   const generationRef = useRef(0);
   const dirtyRef = useRef(new Set<Joint>());
@@ -135,12 +137,23 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       onCommand("mechanics:" + ("command" in payload ? payload.command : "joint" in payload ? `${payload.joint}:${payload.pulse_us}` : `save:${payload.name}`));
       return true;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Mất kết nối bộ điều khiển");
+      lastErrorRef.current=error instanceof Error ? error.message : "Mất kết nối bộ điều khiển";
+      setMessage(lastErrorRef.current);
       return false;
     } finally {
       if (generation === generationRef.current) { pendingRef.current = false; setPending(false); }
     }
   }, [applyState, onCommand, request]);
+
+  useEffect(() => {
+    registerGift?.(async() => {
+      lastErrorRef.current="";
+      const ok=await mutate({command: "GIFT DISPENSE"});
+      if(!ok)throw new Error(lastErrorRef.current || "Chưa xác nhận được yêu cầu Đổi quà");
+      return true;
+    }, pending);
+    return () => registerGift?.(null, false);
+  }, [registerGift, mutate, pending]);
 
   const releaseDrive = useCallback(() => {
     if (driveRef.current) return mutate({ command: "XM" }, "command", true);
@@ -381,4 +394,5 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     </div>
   </section>;
 }
+
 
