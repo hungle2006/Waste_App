@@ -7,6 +7,7 @@ import { makeSupabase } from "./supabase";
 
 export type AutoState = {
   operator_protocol?: number; mechanics_enabled?: boolean; auto_running?: boolean;
+  manual_wheels_available?: boolean; d18_detected?: boolean;
   assist_running?: boolean; transitioning?: boolean; state?: string; message?: string;
   distance_ready?: boolean; tof_mm?: number | null; tof_votes?: number; label?: string | null; bin?: number | null;
   target_fresh?: boolean; orientation?: {angle_deg?: number; pulse_us?: number; reason?: string; calibrated?: boolean};
