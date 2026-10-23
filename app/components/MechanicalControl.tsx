@@ -163,7 +163,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const startDrive = (mode: string) => {
     const current = robotRef.current;
     if (driveRef.current || pendingRef.current || !active || !connected || !current?.connected ||
-        !current.fresh || current.stopped || current.busy || current.auto_running || current.auto_rear) return;
+        !current.fresh || current.stopped || current.busy || current.auto?.manual_wheels_available !== true) return;
     const session = { mode, epoch: current.epoch, speed };
     driveRef.current = session;
     setDriveHeld(mode);
@@ -257,8 +257,15 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const ready = connected && robot?.connected && robot.fresh;
   const moving = Boolean(robot?.hardware.motors?.some(pwm => pwm !== 0));
   const canMove = Boolean(active && ready && !robot?.stopped && !robot?.busy && !robot?.auto_running && !pending && !moving && !driveHeld);
-  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !robot?.auto_running && !pending && !robot?.auto_rear);
+  const autoState = robot?.auto;
+  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !pending && autoState?.manual_wheels_available === true);
   const hardware = ready ? robot.hardware : {};
+  const manualStatus = !ready ? "Chưa kết nối Arduino"
+    : robot?.stopped ? "Đã STOP – cần cho phép điều khiển"
+    : autoState?.transitioning ? "Đang bàn giao quyền cơ khí"
+    : autoState?.mechanics_enabled === false
+      ? (canDrive ? "ĐỎ · Điều khiển tay được, kể cả khi D18 phát hiện" : "ĐỎ · Đang chờ cơ khí sẵn sàng")
+      : autoState?.auto_running ? "XANH · AUTO đang điều khiển bánh" : "Điều khiển thủ công khi AUTO chưa giữ bánh";
   const acknowledged = (id: string) => hardware.joints?.[id] == null ? "Chưa gửi" : `${hardware.joints[id]} µs`;
   const action = (command: string) => { void mutate({ command }); };
   const driveButton = (mode: string, title: string, symbol?: string) => <button key={mode} type="button"
@@ -271,7 +278,6 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     {symbol && <span aria-hidden="true" className="text-2xl leading-none">{symbol}</span>}<span className="text-[10px] font-semibold">{title}</span>
   </button>;
 
-  const autoState = robot?.auto;
   const operatorReady = brokerOnline && robot?.fresh && [1,2].includes(autoState?.operator_protocol ?? 0);
   const advancedReady = Boolean(operatorReady && autoState?.operator_protocol === 2);
   const wristPulse = ready ? hardware.joints?.d2 : null;
@@ -313,6 +319,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       <button className="tool-button !min-h-11" disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
       <button type="button" aria-label="Dừng AUTO" title="Dừng AUTO" className="tool-button !min-h-11" disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}><Square size={14}/></button>
     </div>}
+    <p role="status" className="mx-3 my-2 text-[11px] text-slate-600">{manualStatus}{autoState?.d18_detected ? " · D18: ĐANG PHÁT HIỆN" : " · D18: Không phát hiện"}</p>
     <div role="tablist" aria-label="Nhóm điều khiển cơ khí" className="control-tabs">
       {CONTROL_TABS.map((item, index) => <button key={item.id} type="button" role="tab" id={`control-tab-${item.id}`} aria-controls={`control-panel-${item.id}`} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
         onClick={() => selectTab(item.id)} onKeyDown={event => {
