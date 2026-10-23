@@ -71,6 +71,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const [message, setMessage] = useState("");
   const [speed, setSpeed] = useState(20);
   const [driveHeld, setDriveHeld] = useState("");
+  const manualHandoverAttemptedRef = useRef(false);
   const [tab, setTab] = useState<ControlTab>("arm");
   const controlsScrollRef = useRef<HTMLDivElement | null>(null);
   const driveRef = useRef<{ mode: string; epoch: number; speed: number } | null>(null);
@@ -163,7 +164,8 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const startDrive = (mode: string) => {
     const current = robotRef.current;
     if (driveRef.current || pendingRef.current || !active || !connected || !current?.connected ||
-        !current.fresh || current.stopped || current.busy || current.auto?.manual_wheels_available !== true) return;
+        !current.fresh || current.stopped || current.busy || current.auto?.transitioning ||
+        current.auto?.mechanics_enabled !== false || current.auto?.manual_wheels_available !== true) return;
     const session = { mode, epoch: current.epoch, speed };
     driveRef.current = session;
     setDriveHeld(mode);
@@ -230,6 +232,25 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     return () => clearInterval(timer);
   }, [applyState, connected, request]);
 
+  // A UI switch to MANUAL is only complete after Jetson acknowledges
+  // MECHANICS OFF. Do not bypass backend authorization to make buttons look active.
+  useEffect(() => {
+    if (autoMode) { manualHandoverAttemptedRef.current = false; return; }
+    if (!connected || !brokerOnline || !robot?.connected || !robot.fresh || robot.stopped) return;
+    if (robot.auto?.mechanics_enabled === false) {
+      manualHandoverAttemptedRef.current = false;
+      return;
+    }
+    if (robot.auto?.operator_protocol !== 2 || robot.auto?.transitioning || pending ||
+        manualHandoverAttemptedRef.current) return;
+    manualHandoverAttemptedRef.current = true;
+    void mutate({command: "MECHANICS OFF"}, "operator").then(ok => {
+      if (!ok) setMessage("Chưa bàn giao được quyền lái. Kiểm tra Jetson hoặc nhấn “Nhận quyền điều khiển”.");
+    });
+  }, [autoMode, connected, brokerOnline, robot?.connected, robot?.fresh, robot?.stopped,
+      robot?.auto?.mechanics_enabled, robot?.auto?.operator_protocol, robot?.auto?.transitioning,
+      pending, mutate]);
+
   async function connect() {
     if (pendingRef.current) return;
     const generation = ++generationRef.current;
@@ -258,7 +279,17 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const moving = Boolean(robot?.hardware.motors?.some(pwm => pwm !== 0));
   const canMove = Boolean(active && ready && !robot?.stopped && !robot?.busy && !robot?.auto_running && !pending && !moving && !driveHeld);
   const autoState = robot?.auto;
-  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !pending && autoState?.manual_wheels_available === true);
+  const canDrive = Boolean(active && ready && !robot?.stopped && !robot?.busy && !pending && !autoState?.transitioning && autoState?.mechanics_enabled === false && autoState?.manual_wheels_available === true);
+  const driveStatus = !brokerOnline ? "Chưa kết nối Supabase. Kiểm tra mạng Jetson và cấu hình ứng dụng."
+    : !connected ? 'Nhấn “Kết nối Python” ở đầu bảng điều khiển để kích hoạt các nút bánh.'
+    : !robot?.connected || !robot.fresh ? "Chưa nhận phản hồi mới từ Python/Arduino. Kiểm tra chương trình Jetson."
+    : robot.stopped ? "Robot đang khóa sau STOP. Nhấn “Cho phép điều khiển” để mở khóa."
+    : robot.busy || pending ? "Đang xử lý lệnh cơ khí. Chờ hoàn tất để điều khiển bánh."
+    : autoState?.transitioning ? "Đang bàn giao quyền điều khiển bánh."
+    : autoState?.operator_protocol !== 2 || typeof autoState?.manual_wheels_available !== "boolean" ? "Jetson chưa báo quyền điều khiển bánh. Cần chạy bản Python mới."
+    : autoState?.mechanics_enabled !== false ? "AUTO đang giữ quyền cơ khí. Hãy chuyển sang Đỏ – Bạn điều khiển."
+    : !autoState.manual_wheels_available ? "Jetson chưa cho phép di chuyển. Kiểm tra trạng thái cảm biến và cơ khí."
+    : "Sẵn sàng điều khiển bánh thủ công; D18 vẫn được theo dõi.";
   const hardware = ready ? robot.hardware : {};
   const manualStatus = !ready ? "Chưa kết nối Arduino"
     : robot?.stopped ? "Đã STOP – cần cho phép điều khiển"
@@ -319,7 +350,12 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       <button className="tool-button !min-h-11" disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
       <button type="button" aria-label="Dừng AUTO" title="Dừng AUTO" className="tool-button !min-h-11" disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}><Square size={14}/></button>
     </div>}
-    <p role="status" className="mx-3 my-2 text-[11px] text-slate-600">{manualStatus}{autoState?.d18_detected ? " · D18: ĐANG PHÁT HIỆN" : " · D18: Không phát hiện"}</p>
+    <p role="status" className="mx-3 my-2 text-[11px] text-slate-600">{manualStatus}{autoState?.d18_detected === true ? " · D18: ĐANG PHÁT HIỆN" : autoState?.d18_detected === false ? " · D18: Không phát hiện" : " · D18: Chưa có trạng thái"}</p>
+    {!autoMode && ready && autoState?.operator_protocol === 2 && autoState?.mechanics_enabled !== false && <button
+      type="button" disabled={pending || autoState?.transitioning} onClick={() => void mutate({command: "MECHANICS OFF"}, "operator")}
+      className="mx-3 mb-2 min-h-10 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 disabled:opacity-40">
+      Nhận quyền điều khiển bánh (Đỏ)
+    </button>}
     <div role="tablist" aria-label="Nhóm điều khiển cơ khí" className="control-tabs">
       {CONTROL_TABS.map((item, index) => <button key={item.id} type="button" role="tab" id={`control-tab-${item.id}`} aria-controls={`control-panel-${item.id}`} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
         onClick={() => selectTab(item.id)} onKeyDown={event => {
@@ -374,7 +410,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="control-section-title"><Radio size={16}/>Di chuyển Mecanum</h3><p className="mt-1 text-xs text-slate-500">Giữ để chạy · thả để dừng</p></div><label className="flex items-center gap-2 text-xs text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => {const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n);}} className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center font-bold text-emerald-700"/></label></div>
         <div className="drive-pad grid grid-cols-3 gap-2">{DIRECTIONS.map(([mode, title, symbol]) => mode === "STOP" ? <button key={mode} aria-label={title} onClick={() => void mutate({command:"XM"}, "command", true)} className="btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button> : driveButton(mode, title, symbol))}</div>
         <div className="mt-2 grid grid-cols-2 gap-2">{TURNS.map(([mode,title,symbol]) => driveButton(mode,title,symbol))}</div>
-        {robot?.auto_rear && <p className="mt-3 text-xs text-amber-700">Tắt “Tự phân loại phía sau D18” ở Thùng & nắp để chạy bánh bằng tay.</p>}
+        <p role="status" className={`mt-3 text-xs ${canDrive ? "text-emerald-700" : "text-amber-700"}`}>{driveStatus}</p>
         <details className="control-details mt-4"><summary>Cua theo cung & trạng thái 4 bánh</summary><div className="mt-3 grid grid-cols-2 gap-2">{ARCS.map(([mode,title]) => driveButton(mode,title))}</div><div className="mt-3 grid grid-cols-2 gap-2">{WHEELS.map(([name,position,sign],i) => <div key={name} className="rounded-lg bg-slate-50 p-3 text-[10px] text-slate-500"><b>{name}</b> · {position}<span className="float-right font-mono font-bold">{hardware.motors?.[i] ?? "—"}</span><span className="mt-1 block">Chiều tiến: PWM {sign}</span></div>)}</div><p className="mt-3 text-[11px] text-slate-500">Hướng theo robot nhìn từ sau ra trước. Mất lệnh làm mới, Arduino dừng bánh sau tối đa 500 ms.</p></details>
       </div>
       <div role="tabpanel" id="control-panel-bins" aria-labelledby="control-tab-bins" hidden={tab !== "bins"} tabIndex={0}>
