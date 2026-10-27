@@ -61,6 +61,16 @@ const ARCS = [["ARC_FORWARD_LEFT", "Tiến cua trái"], ["ARC_FORWARD_RIGHT", "T
 const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["M3", "Sau phải", "−"], ["M4", "Trước trái", "+"]];
 const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40";
 
+// Web-only 4G improvement. Backend still enforces a 500 ms DRIVE packet TTL,
+// a motor dead-man lease, command epochs, and strict operator ownership.
+const DRIVE_REFRESH_MS = 180;
+const DRIVE_MAX_IN_FLIGHT = 4;
+const DRIVE_ACK_WATCHDOG_MS = 1600;
+type DriveSession = {
+  mode: string; epoch: number; speed: number;
+  inFlight: number; lastAckAt: number;
+};
+
 /** Frontend-only: use Jetson's existing POSE SEARCH command; never bypass physical interlocks. */
 function searchOnConnect(state: RobotState): { send: boolean; message: string } {
   if (!state.connected || !state.fresh)
@@ -105,7 +115,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const manualHandoverAttemptedRef = useRef(false);
   const [tab, setTab] = useState<ControlTab>("arm");
   const controlsScrollRef = useRef<HTMLDivElement | null>(null);
-  const driveRef = useRef<{ mode: string; epoch: number; speed: number } | null>(null);
+  const driveRef = useRef<DriveSession | null>(null);
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realtimeRef = useRef<RobotRealtimeClient | null>(null);
   const [brokerOnline, setBrokerOnline] = useState(false);
@@ -197,27 +207,60 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     if (driveRef.current || pendingRef.current || !active || !connected || !current?.connected ||
         !current.fresh || current.stopped || current.busy || current.auto?.transitioning ||
         current.auto?.mechanics_enabled !== false || current.auto?.manual_wheels_available !== true) return;
-    const session = { mode, epoch: current.epoch, speed };
+    const session: DriveSession = { mode, epoch: current.epoch, speed, inFlight: 0, lastAckAt: Date.now() };
     driveRef.current = session;
     setDriveHeld(mode);
     const generation = generationRef.current;
-    const tick = async () => {
+    const abortDrive = (reason: string) => {
       if (driveRef.current !== session) return;
-      try {
-        const next = await request("command", { command: `DRIVE ${mode}`, speed: session.speed, epoch: session.epoch });
-        if (driveRef.current !== session || generation !== generationRef.current) return;
-        applyState(next);
-        if (next.epoch !== session.epoch || next.stopped || !next.connected) { releaseDrive(); return; }
-        setMessage(`Đang giữ nút · PWM ${session.speed}. Thả nút để dừng.`);
-        driveTimer.current = setTimeout(() => void tick(), 180);
-      } catch (error) {
-        if (driveRef.current !== session) return;
-        releaseDrive();
-        setMessage(error instanceof Error ? error.message : "Không gửi được lệnh bánh xe");
+      void releaseDrive(); // XM has priority, bumps Jetson epoch, and invalidates older DRIVE packets.
+      setMessage(reason);
+    };
+    const tick = () => {
+      if (driveRef.current !== session || generation !== generationRef.current) return;
+      const state = robotRef.current;
+      if (!active || !connected || !state?.fresh || !state.connected || state.stopped ||
+          state.epoch !== session.epoch || state.busy || state.auto?.transitioning ||
+          state.auto?.mechanics_enabled !== false || state.auto?.manual_wheels_available !== true) {
+        abortDrive("Đã ngừng bánh: mất trạng thái mới hoặc quyền điều khiển cơ khí.");
+        return;
       }
+      if (Date.now() - session.lastAckAt > DRIVE_ACK_WATCHDOG_MS) {
+        abortDrive("Không có ACK từ Python trong 1,6 giây. Đã gửi phanh XM; kiểm tra mạng 4G.");
+        return;
+      }
+      // Refresh at a fixed rate instead of waiting for the previous round-trip ACK.
+      // Bound outstanding packets so a slow 4G connection cannot accumulate a drive queue.
+      if (session.inFlight < DRIVE_MAX_IN_FLIGHT) {
+        session.inFlight++;
+        void request("command", { command: `DRIVE ${mode}`, speed: session.speed, epoch: session.epoch })
+          .then(next => {
+            session.inFlight--;
+            if (driveRef.current !== session || generation !== generationRef.current) return;
+            if (next.epoch !== session.epoch || next.stopped || !next.connected ||
+                !next.fresh || next.auto?.mechanics_enabled !== false ||
+                next.auto?.manual_wheels_available !== true) {
+              abortDrive("Python đã đổi trạng thái hoặc thu hồi quyền điều khiển bánh.");
+              return;
+            }
+            session.lastAckAt = Date.now();
+            applyState(next);
+            setMessage(`Đang giữ nút · PWM ${session.speed} · đã có ACK. Thả để dừng.`);
+          })
+          .catch(error => {
+            session.inFlight--;
+            if (driveRef.current !== session || generation !== generationRef.current) return;
+            const reason = error instanceof Error ? error.message : "Không gửi được lệnh bánh xe";
+            // Concurrent 4G packets can arrive out of order or already expired.
+            // A newer ACK can still succeed; the watchdog ends motion if none does.
+            if (/Lệnh cũ tới trễ|Lệnh đã hết hạn/.test(reason)) return;
+            abortDrive(reason);
+          });
+      }
+      driveTimer.current = setTimeout(tick, DRIVE_REFRESH_MS);
     };
     onCommand(`mechanics:DRIVE ${mode}`);
-    void tick();
+    tick();
   };
 
   useEffect(() => {
@@ -247,7 +290,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   useEffect(() => {
     if (!connected) return;
     const timer = setInterval(async () => {
-      if (pendingRef.current || pollingRef.current) return;
+      if (pendingRef.current || pollingRef.current || driveRef.current) return;
       pollingRef.current = true;
       const generation = generationRef.current;
       try {
