@@ -43,6 +43,45 @@ beforeEach(()=>{
 afterEach(()=>{cleanup();vi.unstubAllGlobals()});
 const mount=()=>render(<MechanicalControl active autoMode registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);
 async function connect(){fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));}
+describe('Samsung contest greeting in the Vercel browser',()=>{
+  it('speaks Vietnamese once after a successful Connect ACK',async()=>{
+    const speak=vi.fn(), cancel=vi.fn(), resume=vi.fn();
+    const original=Object.getOwnPropertyDescriptor(window,'speechSynthesis');
+    const originalUtterance=(globalThis as any).SpeechSynthesisUtterance;
+    class StubUtterance {
+      lang=''; rate=1; pitch=1; volume=1; voice:any=null;
+      constructor(public text:string){}
+    }
+    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+      speak,cancel,resume,getVoices:()=>[{lang:'vi-VN',name:'Vietnamese'}]
+    }});
+    vi.stubGlobal('SpeechSynthesisUtterance',StubUtterance);
+    try {
+      mount();await connect();
+      await waitFor(()=>expect(speak).toHaveBeenCalledTimes(1));
+      expect(speak.mock.calls[0][0].text).toContain('cuộc thi sáng tạo Samsung');
+      expect(speak.mock.calls[0][0].lang).toBe('vi-VN');
+    } finally {
+      if(original)Object.defineProperty(window,'speechSynthesis',original);
+      else delete (window as any).speechSynthesis;
+      vi.stubGlobal('SpeechSynthesisUtterance',originalUtterance);
+    }
+  });
+  it('does not speak when Connect is not acknowledged',async()=>{
+    const speak=vi.fn();
+    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+      speak,cancel:vi.fn(),resume:vi.fn(),getVoices:()=>[]
+    }});
+    vi.stubGlobal('SpeechSynthesisUtterance',class {constructor(public text:string){}});
+    fake.beforeRequest=async(action)=>{if(action==='connect')throw Error('Mất kết nối')};
+    mount();
+    fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));
+    await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));
+    expect(speak).not.toHaveBeenCalled();
+    delete (window as any).speechSynthesis;
+  });
+});
+
 describe('Vercel-only automatic SEARCH on connect',()=>{
   it('sends POSE SEARCH when connected, idle, gripper clear, and arm is not at SEARCH',async()=>{
     fake.state.hardware.joints.p1=1800;
