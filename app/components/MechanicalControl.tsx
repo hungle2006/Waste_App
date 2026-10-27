@@ -21,6 +21,7 @@ type Config = {
 type RobotState = {
   connected: boolean; fresh: boolean; stopped: boolean; busy: boolean;
   simulation: boolean; epoch: number; job: string; progress: number; auto_rear: boolean;
+  rear_pending?: boolean; rear_handling?: boolean;
   gift?: GiftState; auto_running?: boolean; auto?: AutoState; command_trace?: RobotRealtimeState["command_trace"];
   hardware: { pca?: boolean; joints?: Record<string, number | null>; motors?: number[]; sensors?: Record<string, number> };
   config: Config; log: { time: string; text: string }[];
@@ -59,6 +60,36 @@ const ARCS = [["ARC_FORWARD_LEFT", "Tiến cua trái"], ["ARC_FORWARD_RIGHT", "T
   ["ARC_BACK_LEFT", "Lùi cua trái"], ["ARC_BACK_RIGHT", "Lùi cua phải"]];
 const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["M3", "Sau phải", "−"], ["M4", "Trước trái", "+"]];
 const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40";
+
+/** Frontend-only: use Jetson's existing POSE SEARCH command; never bypass physical interlocks. */
+function searchOnConnect(state: RobotState): { send: boolean; message: string } {
+  if (!state.connected || !state.fresh)
+    return { send: false, message: "Đã gửi yêu cầu kết nối nhưng chưa xác nhận Arduino và trạng thái cảm biến." };
+  if (state.stopped)
+    return { send: false, message: "Đã kết nối nhưng đang STOP. Không tự di chuyển tay; kiểm tra an toàn trước khi RESUME." };
+  if (state.busy)
+    return { send: false, message: state.job.includes("SEARCH")
+      ? "Đã kết nối. Jetson đang đưa cánh tay về SEARCH; không gửi lệnh trùng."
+      : "Đã kết nối nhưng robot đang thực hiện thao tác; không tự đưa tay về SEARCH." };
+  if (state.auto_running || state.auto?.auto_running || state.auto?.assist_running ||
+      state.auto?.transitioning || state.rear_pending || state.rear_handling)
+    return { send: false, message: "Đã kết nối nhưng AUTO hoặc D18 đang xử lý; không giành quyền cơ khí." };
+  if (state.auto?.held_bin != null)
+    return { send: false, message: "Robot còn ghi nhận vật cần thả. Không tự đưa cánh tay về SEARCH." };
+  if (state.hardware.sensors?.D19 !== 1)
+    return { send: false, message: "D19 chưa xác nhận kẹp rỗng; không tự đưa cánh tay về SEARCH." };
+  const motors = state.hardware.motors;
+  if (!motors || motors.length < 4 || motors.some(value => value !== 0))
+    return { send: false, message: "Chưa xác nhận cả bốn bánh đã dừng; không đưa tay về SEARCH." };
+  const search = state.config.poses.SEARCH;
+  const joints = state.hardware.joints;
+  const arm = ["p1", "p10", "p11"] as const;
+  if (!search || !joints || arm.some(j => !Number.isFinite(search[j]) || !Number.isFinite(joints[j])))
+    return { send: false, message: "Chưa có trạng thái khớp tay đầy đủ; không tự di chuyển." };
+  if (arm.every(j => joints[j] === search[j]))
+    return { send: false, message: "Đã kết nối. Cánh tay đã ở tư thế SEARCH." };
+  return { send: true, message: "Đã kết nối. Đang yêu cầu Jetson đưa cánh tay về SEARCH…" };
+}
 
 export default function MechanicalControl({ active, autoMode = false, onRobotState, registerStop, registerGift, onBinChange, onCommand }: Props) {
   const [robot, setRobot] = useState<RobotState | null>(null);
@@ -262,7 +293,17 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       draftRef.current = { ...INITIAL, ...next.config.poses.SETUP };
       setDraft({ ...draftRef.current });
       setConnected(true); applyState(next);
-      setMessage(next.stopped ? `Đã kết nối nhưng cơ khí đang STOP: ${next.job}. Kiểm tra robot trước khi cho phép điều khiển.` : next.busy && next.job.includes("SEARCH") ? "Đã kết nối. Đang đưa cánh tay về SEARCH; bánh đã dừng." : next.job.includes("SEARCH") ? "Đã kết nối. Cánh tay đã ở tư thế SEARCH." : `Đã kết nối. ${next.job}`);
+      const decision = searchOnConnect(next);
+      setMessage(decision.message);
+      if (decision.send) {
+        // Exactly one homing request per user click. Robot validates epoch, ownership,
+        // STOP and ongoing jobs again before touching any servo.
+        const homing = await request("command", { command: "POSE SEARCH", epoch: next.epoch });
+        if (generation !== generationRef.current) return;
+        applyState(homing);
+        setMessage("Jetson đã nhận lệnh SEARCH; đang chờ cánh tay chuyển về vị trí.");
+        onCommand("mechanics:POSE SEARCH");
+      }
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không kết nối được"); }
     finally { if (generation === generationRef.current) { pendingRef.current = false; setPending(false); } }
   }
