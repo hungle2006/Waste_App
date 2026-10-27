@@ -237,6 +237,37 @@ describe('Operator controls with robot ACK',()=>{
   expect(screen.getByRole('button',{name:'Gắp theo cảm biến',exact:true}).hasAttribute('disabled')).toBe(true);
   expect(screen.getByRole('button',{name:'Bắt đầu AUTO'}).hasAttribute('disabled')).toBe(false);
  });
+ it('4G: refreshes DRIVE while the first Python ACK is still delayed, bounded to 4 outstanding',async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+  const releasePending:Array<()=>void>=[];
+  fake.beforeRequest=async(_action,body)=>{
+    if(body.command==='DRIVE FORWARD')await new Promise<void>(resolve=>{releasePending.push(resolve)});
+  };
+  mount();await connect();chooseTab('Bánh xe');
+  fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(releasePending.length).toBe(1));
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,810))});
+  expect(fake.requests.filter(x=>x.body.command==='DRIVE FORWARD').length).toBeGreaterThan(1);
+  expect(fake.requests.filter(x=>x.body.command==='DRIVE FORWARD').length).toBeLessThanOrEqual(4);
+  fireEvent.keyUp(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='XM')).toBe(true));
+  const count=fake.requests.filter(x=>x.body.command==='DRIVE FORWARD').length;
+  await act(async()=>{releasePending.forEach(f=>f());await new Promise(resolve=>setTimeout(resolve,250))});
+  expect(fake.requests.filter(x=>x.body.command==='DRIVE FORWARD')).toHaveLength(count);
+ });
+ it('4G: brakes and stops refreshing if all Python ACKs remain missing',async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+  fake.beforeRequest=async(_action,body)=>{
+    if(body.command==='DRIVE FORWARD')await new Promise<void>(()=>{});
+  };
+  mount();await connect();chooseTab('Bánh xe');
+  fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='DRIVE FORWARD')).toBe(true));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='XM')).toBe(true),{timeout:2500});
+  const count=fake.requests.filter(x=>x.body.command==='DRIVE FORWARD').length;
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,250))});
+  expect(fake.requests.filter(x=>x.body.command==='DRIVE FORWARD')).toHaveLength(count);
+ });
  it('hold cancels the held wheel refresh timer',async()=>{
   fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
   mount();await connect();chooseTab('Bánh xe');
