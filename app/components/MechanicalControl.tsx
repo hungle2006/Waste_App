@@ -101,6 +101,27 @@ function searchOnConnect(state: RobotState): { send: boolean; message: string } 
   return { send: true, message: "Đã kết nối. Đang yêu cầu Jetson đưa cánh tay về SEARCH…" };
 }
 
+/** The Samsung contest greeting is speech-only in this browser; no server audio. */
+function speakContestWelcome() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window) ||
+      typeof SpeechSynthesisUtterance === "undefined") return;
+  try {
+    window.speechSynthesis.cancel();
+    const speech = new SpeechSynthesisUtterance(
+      "Chào mừng bạn đến với cuộc thi sáng tạo Samsung! Waste Robot đã kết nối. Cùng biến công nghệ thành hành động vì một môi trường xanh hơn!"
+    );
+    speech.lang = "vi-VN";
+    speech.rate = 0.94;
+    speech.pitch = 1.05;
+    speech.volume = 1;
+    const vietnameseVoice = window.speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith("vi"));
+    if (vietnameseVoice) speech.voice = vietnameseVoice;
+    window.speechSynthesis.speak(speech);
+  } catch {
+    // Audio support is optional. Never block robot control for a TTS error.
+  }
+}
+
 export default function MechanicalControl({ active, autoMode = false, onRobotState, registerStop, registerGift, onBinChange, onCommand }: Props) {
   const [robot, setRobot] = useState<RobotState | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -328,6 +349,10 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   async function connect() {
     if (pendingRef.current) return;
     const generation = ++generationRef.current;
+    // Mobile browsers may suspend TTS unless activated inside a real button click.
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try { window.speechSynthesis.resume(); } catch { /* unsupported browser */ }
+    }
     pendingRef.current = true; setPending(true);
     try {
       const next = await request("connect", {});
@@ -336,6 +361,8 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       draftRef.current = { ...INITIAL, ...next.config.poses.SETUP };
       setDraft({ ...draftRef.current });
       setConnected(true); applyState(next);
+      // Voice is produced only by the operator's device after Python ACK.
+      if (next.connected && next.fresh) speakContestWelcome();
       const decision = searchOnConnect(next);
       setMessage(decision.message);
       if (decision.send) {
@@ -419,7 +446,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         </div>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <button aria-label="Kết nối Python" title="Kết nối và đưa tay về SEARCH khi an toàn (Jetson V3.16.38)" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
+        <button aria-label="Kết nối Python" title="Kết nối robot và phát lời chào Samsung trên ứng dụng" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
     </div>
