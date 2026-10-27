@@ -43,6 +43,40 @@ beforeEach(()=>{
 afterEach(()=>{cleanup();vi.unstubAllGlobals()});
 const mount=()=>render(<MechanicalControl active autoMode registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);
 async function connect(){fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));}
+describe('Vercel-only automatic SEARCH on connect',()=>{
+  it('sends POSE SEARCH when connected, idle, gripper clear, and arm is not at SEARCH',async()=>{
+    fake.state.hardware.joints.p1=1800;
+    mount();await connect();
+    await waitFor(()=>expect(fake.requests.some(x=>x.action==='command'&&x.body.command==='POSE SEARCH'&&x.body.epoch===3)).toBe(true));
+  });
+  it('does not duplicate an existing SEARCH setup job',async()=>{
+    fake.state.busy=true;fake.state.job='SEARCH · khởi tạo mặc định';
+    fake.state.hardware.joints.p1=1800;
+    mount();await connect();
+    expect(fake.requests.some(x=>x.body.command==='POSE SEARCH')).toBe(false);
+  });
+  it('does not move the arm if D19 senses an object',async()=>{
+    fake.state.hardware.joints.p1=1800;fake.state.hardware.sensors.D19=0;
+    mount();await connect();
+    expect(fake.requests.some(x=>x.body.command==='POSE SEARCH')).toBe(false);
+  });
+  it('does not move the arm if AUTO owns the robot',async()=>{
+    fake.state.hardware.joints.p1=1800;fake.state.auto_running=true;
+    mount();await connect();
+    expect(fake.requests.some(x=>x.body.command==='POSE SEARCH')).toBe(false);
+  });
+  it('does not move during STOP',async()=>{
+    fake.state.hardware.joints.p1=1800;fake.state.stopped=true;
+    mount();await connect();
+    expect(fake.requests.some(x=>x.body.command==='POSE SEARCH')).toBe(false);
+  });
+  it('does not move when a wheel is still active',async()=>{
+    fake.state.hardware.joints.p1=1800;fake.state.hardware.motors=[20,0,0,0];
+    mount();await connect();
+    expect(fake.requests.some(x=>x.body.command==='POSE SEARCH')).toBe(false);
+  });
+});
+
 describe('Operator controls with robot ACK',()=>{
  it('brakes held wheels before submitting a mode change',async()=>{
   fake.state.auto.mechanics_enabled=false;fake.state.auto.auto_running=true;
