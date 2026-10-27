@@ -262,7 +262,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       draftRef.current = { ...INITIAL, ...next.config.poses.SETUP };
       setDraft({ ...draftRef.current });
       setConnected(true); applyState(next);
-      setMessage(next.stopped ? "Đã kết nối. Cho phép điều khiển để robot về tư thế tìm rác phía trước." : "Đã kết nối. Python đang thiết lập tư thế tìm rác phía trước.");
+      setMessage(next.stopped ? `Đã kết nối nhưng cơ khí đang STOP: ${next.job}. Kiểm tra robot trước khi cho phép điều khiển.` : next.busy && next.job.includes("SEARCH") ? "Đã kết nối. Đang đưa cánh tay về SEARCH; bánh đã dừng." : next.job.includes("SEARCH") ? "Đã kết nối. Cánh tay đã ở tư thế SEARCH." : `Đã kết nối. ${next.job}`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không kết nối được"); }
     finally { if (generation === generationRef.current) { pendingRef.current = false; setPending(false); } }
   }
@@ -335,7 +335,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         </div>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <button aria-label="Kết nối Python" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
+        <button aria-label="Kết nối Python" title="Kết nối và đưa tay về SEARCH khi an toàn (Jetson V3.16.38)" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
     </div>
