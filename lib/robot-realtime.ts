@@ -28,6 +28,10 @@ export type RobotRealtimeState = {
   log: { time: string; text: string }[];
 };
 
+export type TerminalLogEntry = {
+  robot_id: string; session_id: string; seq: number; at_ms: number;
+  level: "info" | "warn" | "error"; text: string;
+};
 type Ack = { robot_id: string; session_id: string; state_seq: number; client_id: string;
   request_id: string; ok: boolean; error?: string; state: RobotRealtimeState };
 type StatePacket = Omit<Ack, "client_id" | "request_id" | "ok">;
@@ -41,6 +45,7 @@ export class RobotRealtimeClient {
   private seq = 0;
   private session = "";
   private stateSeq = -1;
+  private lastLogSeq = 0;
   private retiredSessions = new Set<string>();
   private online = false;
   private closed = false;
@@ -51,12 +56,14 @@ export class RobotRealtimeClient {
   private staleTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private onState: (state: RobotRealtimeState) => void,
-    private onTransport: (online: boolean, configured: boolean) => void) {}
+    private onTransport: (online: boolean, configured: boolean) => void,
+    private onTerminal?: (entry: TerminalLogEntry) => void) {}
 
   start() {
     if (!this.supabase) { this.onTransport(false, false); return; }
     this.channel = this.supabase.channel(`robot:${ROBOT_ID}`, { config: { broadcast: { ack: true } } });
     this.channel.on("broadcast", { event: "mechanical_state" }, ({ payload }) => this.accept(payload as StatePacket));
+    this.channel.on("broadcast", { event: "terminal_log" }, ({ payload }) => this.acceptTerminal(payload));
     this.channel.on("broadcast", { event: "mechanical_ack" }, ({ payload }) => {
       const p = payload as Ack;
       if (p.robot_id !== ROBOT_ID || p.client_id !== this.clientId) return;
@@ -80,11 +87,24 @@ export class RobotRealtimeClient {
     }, 300);
   }
 
+  private acceptTerminal(payload: unknown) {
+    // Receive-only diagnostics; never interpret log content as commands.
+    if (!payload || typeof payload !== "object" || this.closed || !this.onTerminal) return;
+    const p = payload as Partial<TerminalLogEntry>;
+    if (!this.session || p.robot_id !== ROBOT_ID || p.session_id !== this.session ||
+      !Number.isSafeInteger(p.seq) || (p.seq as number) <= this.lastLogSeq ||
+      !Number.isFinite(p.at_ms) || Math.abs(Date.now() - (p.at_ms as number)) > 45000 ||
+      typeof p.text !== "string" || p.text.length > 480 ||
+      !["info", "warn", "error"].includes(p.level || "")) return;
+    this.lastLogSeq = p.seq as number;
+    this.onTerminal(p as TerminalLogEntry);
+  }
+
   private accept(p: StatePacket) {
     if (this.closed || p.robot_id !== ROBOT_ID || !p.session_id || !p.state || !Number.isInteger(p.state_seq) || this.retiredSessions.has(p.session_id)) return;
     if (this.session !== p.session_id) {
       if (this.session) this.retiredSessions.add(this.session);
-      this.session = p.session_id; this.stateSeq = -1;
+      this.session = p.session_id; this.stateSeq = -1; this.lastLogSeq = 0;
       for (const [id, pending] of this.pending) {
         // Initial read discovers a session. Keep it until its ACK is received.
         if (this.last) { clearTimeout(pending.timer); pending.reject(new Error("Python đã khởi động lại; kết nối lại")); this.pending.delete(id); }
