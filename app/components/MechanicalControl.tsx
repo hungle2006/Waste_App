@@ -77,6 +77,8 @@ function searchOnConnect(state: RobotState): { send: boolean; message: string } 
     return { send: false, message: "Đã gửi yêu cầu kết nối nhưng chưa xác nhận Arduino và trạng thái cảm biến." };
   if (state.stopped)
     return { send: false, message: "Đã kết nối nhưng đang STOP. Không tự di chuyển tay; kiểm tra an toàn trước khi RESUME." };
+  if (state.gift?.busy && state.gift.phase?.startsWith("test_"))
+    return { send: false, message: "Kết nối thành công. Jetson đang kiểm tra servo phát quà D4; không gửi lệnh SEARCH chồng chéo." };
   if (state.busy)
     return { send: false, message: state.job.includes("SEARCH")
       ? "Đã kết nối. Jetson đang đưa cánh tay về SEARCH; không gửi lệnh trùng."
@@ -470,6 +472,13 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     <div className="control-hold-bar flex shrink-0 items-center justify-between gap-2 px-3 pb-2"><span className="text-[10px] text-slate-500">{autoState?.assist_running ? "Đang thực hiện chu trình gắp/thả" : "Giữ vị trí: giữ xung tay, phanh bánh"}</span><button type="button" disabled={!advancedReady} onClick={() => void mutate({command:"HOLD"},"operator",true)} className="tool-button shrink-0"><Pause size={13}/>Giữ vị trí</button></div>
     {ready && robot.stopped && <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800"><span>Cơ khí đang khóa sau STOP</span><button disabled={robot.busy || pending} onClick={() => action("RESUME")} className="tool-button !border-emerald-200 !bg-emerald-600 !text-white"><Check size={14}/>Cho phép điều khiển</button></div>}
     <p role="status" className={`control-message ${configured === false ? "text-amber-700" : "text-slate-500"}`}>{configured === false ? "Thiếu cấu hình Supabase của app." : message || (brokerOnline ? "Kết nối Python để nhận trạng thái và điều khiển robot." : "Đang kết nối kênh robot…")}</p>
+    {robot?.gift?.phase?.startsWith("test_") && <div role="status" aria-live="polite"
+      className={`mx-3 mb-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${robot.gift.phase === "test_pass"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+        : robot.gift.phase === "test_skipped" ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+      <Radio size={14} className="shrink-0"/><span><strong>D4 TEST:</strong> {robot.gift.message}</span>
+    </div>}
     {autoMode && <div className="auto-toolbar">
       <button type="button" aria-label="Quyền điều khiển cơ khí của Auto" aria-pressed={mechanicsOn} disabled={!operatorReady || pending || autoState?.transitioning}
         onClick={() => runOperator(mechanicsOn ? "MECHANICS OFF" : "MECHANICS ON")}
