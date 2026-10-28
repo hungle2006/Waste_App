@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RobotRealtimeClient, type AutoState, type GiftState, type RobotRealtimeState } from "@/lib/robot-realtime";
+import { RobotRealtimeClient, type AutoState, type GiftState, type RobotRealtimeState, type TerminalLogEntry } from "@/lib/robot-realtime";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleStop, Grip, Leaf, Link2, PackageOpen, Pause, Radio,
   Recycle, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
 
@@ -140,6 +140,23 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realtimeRef = useRef<RobotRealtimeClient | null>(null);
   const [brokerOnline, setBrokerOnline] = useState(false);
+  const [terminalLogs, setTerminalLogs] = useState<TerminalLogEntry[]>([]);
+  const [terminalOpen, setTerminalOpen] = useState(true);
+  const [terminalFollow, setTerminalFollow] = useState(true);
+  const [terminalFilter, setTerminalFilter] = useState<"all" | "auto" | "issues">("all");
+  const terminalBodyRef = useRef<HTMLDivElement | null>(null);
+  const onTerminalLog = useCallback((entry: TerminalLogEntry) => {
+    setTerminalLogs(items => [...items.slice(-249), entry]);
+  }, []);
+  useEffect(() => {
+    if (terminalOpen && terminalFollow && terminalBodyRef.current)
+      terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+  }, [terminalLogs, terminalOpen, terminalFollow]);
+  const shownTerminalLogs = terminalLogs.filter(entry =>
+    terminalFilter === "all" ||
+    (terminalFilter === "auto" && /\\[(AUTO|MODAL|GIÁM SÁT)\\]/i.test(entry.text)) ||
+    (terminalFilter === "issues" && entry.level !== "info"));
+
   const robotRef = useRef<RobotState | null>(null);
   const draftRef = useRef<Record<Joint, number>>(INITIAL);
   const pendingRef = useRef(false);
@@ -175,10 +192,10 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       if (alive) applyState(next as RobotState);
     }, (online, hasConfig) => {
       if (alive) { setBrokerOnline(online); setConfigured(hasConfig); }
-    });
+    }, entry => { if (alive) onTerminalLog(entry); });
     realtimeRef.current = realtime; realtime.start();
     return () => { alive = false; realtime.close(); realtimeRef.current = null; };
-  }, [applyState]);
+  }, [applyState, onTerminalLog]);
 
   const mutate = useCallback(async (payload: Payload, path = "command", urgent = false) => {
     if ("command" in payload && ["STOP", "XM", "HOLD"].includes(payload.command)) {
@@ -546,7 +563,54 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         <details className="control-details mt-3"><summary>Nhật ký Python</summary><div className="mt-3 space-y-2 text-[11px]">{robot?.log.length ? robot.log.slice(0,8).map((entry,i) => <div key={`${entry.time}-${i}`} className="flex gap-3"><time className="shrink-0 font-mono text-slate-400">{entry.time}</time><span>{entry.text}</span></div>) : <p className="text-slate-500">Kết nối Python để nhận trạng thái thật.</p>}</div></details>
       </div>
     </div>
+    <div className="mx-3 mb-3 mt-2 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 text-slate-100" aria-label="Terminal Python trực tiếp">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
+        <button type="button" onClick={() => setTerminalOpen(value => !value)}
+          aria-expanded={terminalOpen} aria-controls="python-terminal-log"
+          className="flex min-h-9 items-center gap-2 text-left text-xs font-bold text-white">
+          <Radio size={15} className={brokerOnline && robot?.fresh ? "text-emerald-400" : "text-amber-400"}/>
+          Terminal Python <span className={brokerOnline && robot?.fresh ? "text-emerald-400" : "text-amber-400"}>
+            {brokerOnline && robot?.fresh ? "● Trực tiếp" : "○ Chờ Jetson"}</span>
+          <ChevronDown size={13} className={terminalOpen ? "rotate-180" : ""}/>
+        </button>
+        {terminalOpen && <div className="flex flex-wrap items-center gap-1">
+          <select aria-label="Lọc nhật ký Python" value={terminalFilter}
+            onChange={event => setTerminalFilter(event.target.value as "all" | "auto" | "issues")}
+            className="min-h-9 rounded-md border border-slate-600 bg-slate-900 px-2 text-[11px] text-slate-100">
+            <option value="all">Tất cả</option><option value="auto">AUTO / AI</option>
+            <option value="issues">Cảnh báo / lỗi</option>
+          </select>
+          <button type="button" onClick={() => setTerminalFollow(value => !value)}
+            aria-pressed={terminalFollow} className="min-h-9 rounded-md border border-slate-600 px-2 text-[11px]">
+            {terminalFollow ? "Cuộn: Bật" : "Cuộn: Tắt"}</button>
+          <button type="button" onClick={() => {
+            const content = shownTerminalLogs.map(l => `${new Date(l.at_ms).toLocaleTimeString("vi-VN")} [${l.level}] ${l.text}`).join("\n");
+            if (content && typeof navigator !== "undefined" && navigator.clipboard?.writeText)
+              void navigator.clipboard.writeText(content).catch(() => {});
+          }} disabled={!shownTerminalLogs.length}
+            className="min-h-9 rounded-md border border-slate-600 px-2 text-[11px] disabled:opacity-40">Sao chép</button>
+          <button type="button" onClick={() => setTerminalLogs([])} className="min-h-9 rounded-md border border-slate-600 px-2 text-[11px]">Xóa</button>
+        </div>}
+      </div>
+      {terminalOpen && <>
+        <div id="python-terminal-log" ref={terminalBodyRef} role="log" aria-label="Nhật ký Python mới nhất"
+          className="h-52 space-y-1 overflow-y-auto break-words px-3 py-3 font-mono text-[11px] leading-relaxed sm:h-64">
+          {shownTerminalLogs.length ? shownTerminalLogs.map(entry =>
+            <div key={`${entry.session_id}-${entry.seq}`} className="flex items-start gap-2">
+              <time className="shrink-0 text-slate-500" dateTime={new Date(entry.at_ms).toISOString()}>
+                {new Date(entry.at_ms).toLocaleTimeString("vi-VN", {hour12:false})}
+              </time>
+              <span className={entry.level === "error" ? "text-red-400" : entry.level === "warn" ? "text-amber-300" : "text-emerald-100"}>{entry.text}</span>
+            </div>
+          ) : <p className="text-slate-400">Chưa nhận log. Chạy Python từ ZIP V3.16.44 và nhấn Kết nối Python để xem AUTO tại đây.</p>}
+        </div>
+        <p className="border-t border-slate-800 px-3 py-2 text-[10px] text-slate-400">
+          {brokerOnline && robot?.fresh ? "Nhật ký mới từ Jetson; giữ tối đa 250 dòng trên trình duyệt." :
+            "Kết nối chưa sẵn sàng. Log cũ chỉ để tham khảo, không phản ánh trạng thái robot hiện tại."}
+          {" "}Chỉ quan sát, không thực thi lệnh terminal từ xa.
+        </p>
+      </>}
+    </div>
+
   </section>;
 }
-
-
