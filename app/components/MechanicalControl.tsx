@@ -154,7 +154,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   }, [terminalLogs, terminalOpen, terminalFollow]);
   const shownTerminalLogs = terminalLogs.filter(entry =>
     terminalFilter === "all" ||
-    (terminalFilter === "auto" && /\\[(AUTO|MODAL|GIÁM SÁT)\\]/i.test(entry.text)) ||
+    (terminalFilter === "auto" && /\[(AUTO|MODAL|GIÁM SÁT)\]/i.test(entry.text)) ||
     (terminalFilter === "issues" && entry.level !== "info"));
 
   const robotRef = useRef<RobotState | null>(null);
