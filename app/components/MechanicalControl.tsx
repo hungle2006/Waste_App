@@ -397,6 +397,23 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     finally { if (generation === generationRef.current) { pendingRef.current = false; setPending(false); } }
   }
 
+  async function testD4() {
+    if (pendingRef.current || !robotRef.current?.connected || !robotRef.current.fresh) return;
+    const generation = ++generationRef.current;
+    pendingRef.current = true; setPending(true);
+    try {
+      const next = await request("d4_test", {epoch: robotRef.current.epoch});
+      if (generation !== generationRef.current) return;
+      applyState(next);
+      setMessage("Đã gửi lệnh Test D4 tới Jetson. Xem D4 TEST hoặc Terminal Python để biết Arduino xác nhận xung.");
+    } catch (error) {
+      if (generation === generationRef.current)
+        setMessage("D4 TEST: " + (error instanceof Error ? error.message : "Không nhận được xác nhận"));
+    } finally {
+      if (generation === generationRef.current) {pendingRef.current = false; setPending(false);}
+    }
+  }
+
   function editJoint(id: Joint, value: number) {
     const limits = robot?.config.limits[id] ?? [500, id === "p1" ? 3500 : 2500];
     if (!Number.isInteger(value) || value < limits[0] || value > limits[1]) return;
@@ -468,6 +485,16 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         <button aria-label="Kết nối Python" title="Kết nối robot và phát lời chào Samsung trên ứng dụng" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
+    </div>
+    <div className="flex items-center justify-between gap-2 px-3 pb-2">
+      <p className="min-w-0 text-[11px] text-slate-500">Kiểm tra xung servo phát quà D4 · không phát quà</p>
+      <button type="button" aria-label="Test xung D4" onClick={() => void testD4()}
+        disabled={!ready || pending || robot?.stopped || robot?.busy || moving ||
+          Boolean(robot?.auto_running || robot?.auto?.auto_running || robot?.auto?.assist_running ||
+          robot?.gift?.busy || robot?.auto?.transitioning)}
+        className="tool-button shrink-0 !border-violet-200 !bg-violet-50 !text-violet-800 disabled:opacity-40">
+        <Radio size={15}/> Test D4
+      </button>
     </div>
     <div className="control-hold-bar flex shrink-0 items-center justify-between gap-2 px-3 pb-2"><span className="text-[10px] text-slate-500">{autoState?.assist_running ? "Đang thực hiện chu trình gắp/thả" : "Giữ vị trí: giữ xung tay, phanh bánh"}</span><button type="button" disabled={!advancedReady} onClick={() => void mutate({command:"HOLD"},"operator",true)} className="tool-button shrink-0"><Pause size={13}/>Giữ vị trí</button></div>
     {ready && robot.stopped && <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800"><span>Cơ khí đang khóa sau STOP</span><button disabled={robot.busy || pending} onClick={() => action("RESUME")} className="tool-button !border-emerald-200 !bg-emerald-600 !text-white"><Check size={14}/>Cho phép điều khiển</button></div>}
