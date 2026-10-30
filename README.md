@@ -25,15 +25,18 @@ hiện tại, không sửa Security Rules hoặc lấy quyền từ Firebase Web
 Nếu dự án hạn chế quyền ghi sau này, bổ sung xác thực Firebase ở server thay vì mở Rules.
 Không thêm tài khoản hay khóa quản trị vào mã trình duyệt.
 
-Laptop 1280–1600 px dùng camera lớn bên trái và bảng điều khiển cuộn riêng bên phải.
-Camera/phiên robot được giữ nguyên khi đổi tab; Dừng khẩn và kết nối luôn nằm ở đầu.
-Màn hình thấp vẫn cuộn được để không cắt mất nút điều khiển.
+Laptop từ 960 px dùng camera bên trái và bảng điều khiển bên phải. Trang cuộn dọc
+tự nhiên bằng con lăn, vuốt hai ngón trên touchpad hoặc thanh cuộn trình duyệt,
+kể cả khi con trỏ đang ở vùng camera hoặc phần đầu bảng điều khiển. Camera, nhóm
+tab điều khiển và thanh đầu có nút Dừng khẩn bám theo khi cuộn. Nội dung điều khiển
+mở theo chiều dài, không bị khóa trong một khung cuộn nhỏ. Camera/phiên robot được
+giữ nguyên khi đổi tab. Màn hình thấp vẫn cuộn được để không cắt mất nút điều khiển.
 
 Ứng dụng Next.js của dự án Vercel `waste-app`, ghép với bộ Python V3.16.
 
 ## Điều khiển
 
-Camera và bảng cơ khí nằm trong cùng một màn hình: màn hình rộng đặt cạnh nhau, điện thoại dọc đặt camera phía trên. Chỉ nội dung bảng cơ khí cuộn; camera, nút dừng và các nhóm điều khiển luôn hiện. Chọn **Cánh tay**, **Bánh xe**, **Thùng & nắp** hoặc **Auto & lệnh**. Đổi nhóm không tạo lại phiên camera/robot; đang giữ bánh thì đổi nhóm sẽ gửi XM để dừng.
+Camera và bảng cơ khí đặt cạnh nhau trên laptop; trang cuộn dọc và giữ camera, nút dừng cùng các nhóm điều khiển trong tầm nhìn. Điện thoại dọc đặt camera phía trên. Chọn **Cánh tay**, **Bánh xe**, **Thùng & nắp** hoặc **Auto & lệnh**. Đổi nhóm không tạo lại phiên camera/robot; đang giữ bánh thì đổi nhóm sẽ gửi XM để dừng.
 
 1. Chạy `python main.py` trên máy robot, rồi bấm **Kết nối Python**.
 2. Mở tab AUTO. **Bắt đầu AUTO** chờ ACK của Python.

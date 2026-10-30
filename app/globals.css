@@ -267,3 +267,40 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .recognition-heading { flex-wrap: wrap; }
   .recognition-counts { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Laptop: native page scrolling works over the camera, toolbar, and controls. */
+@media (min-width:960px) {
+  .operator-shell {
+    --laptop-sticky-top: 74px;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .operator-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: #f1f5f4;
+    box-shadow: 0 -20px 0 20px #f1f5f4;
+  }
+  .operator-workspace {
+    flex: none;
+    align-items: start;
+    grid-template-rows: auto;
+    min-height: calc(100dvh - 90px);
+  }
+  .vision-column {
+    position: sticky;
+    top: var(--laptop-sticky-top);
+    height: calc(100dvh - 90px);
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+  }
+  .control-panel { min-height: calc(100dvh - 90px); overflow: visible; }
+  .control-tabs { position: sticky; top: var(--laptop-sticky-top); z-index: 20; box-shadow: 0 5px 12px #102a2610; }
+  .controls-scroll { flex: none; overflow: visible; overscroll-behavior-y: auto; }
+  .control-panel input, .control-panel select, .control-panel button, .control-details summary {
+    scroll-margin-top: 130px;
+    scroll-margin-bottom: 24px;
+  }
+}
