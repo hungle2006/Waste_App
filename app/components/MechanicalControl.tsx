@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RobotRealtimeClient, type AutoState, type GiftState, type RobotRealtimeState, type TerminalLogEntry } from "@/lib/robot-realtime";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleStop, Grip, Leaf, Link2, PackageOpen, Pause, Radio,
-  Recycle, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2 } from "lucide-react";
+  Recycle, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2, Volume2 } from "lucide-react";
 
 type Joint = "p1" | "p10" | "p11" | "d2";
 type Pose = "SETUP" | "SEARCH" | "PLACE" | "REAR";
@@ -104,13 +104,17 @@ function searchOnConnect(state: RobotState): { send: boolean; message: string } 
 }
 
 /** The Samsung contest greeting is speech-only in this browser; no server audio. */
-function speakContestWelcome() {
+function speakContestWelcome(onError: (message: string) => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window) ||
-      typeof SpeechSynthesisUtterance === "undefined") return;
+      typeof SpeechSynthesisUtterance === "undefined") {
+    onError("Trình duyệt chưa hỗ trợ đọc lời chào. Hãy mở app bằng Chrome hoặc Safari.");
+    return null;
+  }
   try {
     window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
     const speech = new SpeechSynthesisUtterance(
-      "Chào mừng bạn đến với cuộc thi sáng tạo Samsung! Waste Robot đã kết nối. Cùng biến công nghệ thành hành động vì một môi trường xanh hơn!"
+      "Chào mừng bạn đến với cuộc thi sáng tạo Samsung! Mình là Waste Robot. Cùng biến công nghệ thành hành động vì một môi trường xanh hơn!"
     );
     speech.lang = "vi-VN";
     speech.rate = 0.94;
@@ -118,9 +122,15 @@ function speakContestWelcome() {
     speech.volume = 1;
     const vietnameseVoice = window.speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith("vi"));
     if (vietnameseVoice) speech.voice = vietnameseVoice;
+    speech.onerror = event => {
+      if (event.error !== "canceled" && event.error !== "interrupted")
+        onError("Chưa phát được lời chào. Kiểm tra âm lượng, quyền âm thanh của trang và bấm nút loa để thử lại.");
+    };
     window.speechSynthesis.speak(speech);
+    return speech;
   } catch {
-    // Audio support is optional. Never block robot control for a TTS error.
+    onError("Chưa phát được lời chào. Bấm nút loa để thử lại.");
+    return null;
   }
 }
 
@@ -133,6 +143,17 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const [pose, setPose] = useState<Pose>("SEARCH");
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
+  const [voiceError, setVoiceError] = useState("");
+  const welcomeSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // Ask for voices before the click; some browsers load their voice list lazily.
+  useEffect(() => {
+    try { window.speechSynthesis?.getVoices(); } catch { /* Speech remains optional. */ }
+  }, []);
+  const playWelcome = () => {
+    setVoiceError("");
+    // Keep the utterance alive while the browser's native voice is speaking.
+    welcomeSpeechRef.current = speakContestWelcome(setVoiceError);
+  };
   const [speed, setSpeed] = useState(20);
   const [driveHeld, setDriveHeld] = useState("");
   const manualHandoverAttemptedRef = useRef(false);
@@ -368,10 +389,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   async function connect() {
     if (pendingRef.current) return;
     const generation = ++generationRef.current;
-    // Mobile browsers may suspend TTS unless activated inside a real button click.
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try { window.speechSynthesis.resume(); } catch { /* unsupported browser */ }
-    }
+    // Speak synchronously inside this real user click, before any network await.
+    // This is a welcome, not a claim that Python has already connected.
+    playWelcome();
     pendingRef.current = true; setPending(true);
     try {
       const next = await request("connect", {});
@@ -380,8 +400,6 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       draftRef.current = { ...INITIAL, ...next.config.poses.SETUP };
       setDraft({ ...draftRef.current });
       setConnected(true); applyState(next);
-      // Voice is produced only by the operator's device after Python ACK.
-      if (next.connected && next.fresh) speakContestWelcome();
       const decision = searchOnConnect(next);
       setMessage(decision.message);
       if (decision.send) {
@@ -483,9 +501,11 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       </div>
       <div className="flex shrink-0 gap-1.5">
         <button aria-label="Kết nối Python" title="Kết nối robot và phát lời chào Samsung trên ứng dụng" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
+        <button type="button" aria-label="Phát lại lời chào" title="Phát lại lời chào trên thiết bị này" onClick={playWelcome} className="tool-button"><Volume2 size={15}/></button>
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
     </div>
+    {voiceError && <p role="status" className="px-3 pb-2 text-[11px] text-amber-700">{voiceError}</p>}
     <div className="flex items-center justify-between gap-2 px-3 pb-2">
       <p className="min-w-0 text-[11px] text-slate-500">Kiểm tra xung servo phát quà D4 · không phát quà</p>
       <button type="button" aria-label="Test xung D4" onClick={() => void testD4()}

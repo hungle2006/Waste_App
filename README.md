@@ -58,6 +58,15 @@ D2: trái 90° = 500 µs, thẳng Oy = 2100 µs, phải 60° = 2500 µs. Không 
 
 Các nút mới cần `operator_protocol=2` của Python V3.16. Python V3.15 vẫn dùng được chức năng cũ, nhưng không có các nút lệnh mới.
 
+## Lời chào khi kết nối
+
+Bấm **Kết nối Python** sẽ gọi giọng nói ngay trong thao tác bấm, trước khi chờ
+phản hồi mạng. Câu chào giới thiệu “Mình là Waste Robot”, không thông báo kết nối
+thành công trước khi Python xác nhận. Giọng phát trên laptop/điện thoại đang mở
+trang, dùng giọng tiếng Việt có sẵn; tốc độ 0,94, cao độ 1,05, âm lượng trong mã 100%.
+Nút loa **Phát lại lời chào** cho phép nghe lại mà không gửi lệnh robot.
+Lỗi âm thanh có thông báo riêng và không chặn việc kết nối Python.
+
 ## Phát triển và kiểm tra
 
 ```sh

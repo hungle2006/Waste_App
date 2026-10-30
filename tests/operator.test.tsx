@@ -44,41 +44,57 @@ afterEach(()=>{cleanup();vi.unstubAllGlobals()});
 const mount=()=>render(<MechanicalControl active autoMode registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);
 async function connect(){fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));}
 describe('Samsung contest greeting in the Vercel browser',()=>{
-  it('speaks Vietnamese once after a successful Connect ACK',async()=>{
-    const speak=vi.fn(), cancel=vi.fn(), resume=vi.fn();
-    const original=Object.getOwnPropertyDescriptor(window,'speechSynthesis');
-    const originalUtterance=(globalThis as any).SpeechSynthesisUtterance;
-    class StubUtterance {
-      lang=''; rate=1; pitch=1; volume=1; voice:any=null;
+  function mockSpeech(voices:any[]=[{lang:'vi-VN',name:'Vietnamese'}]) {
+    const synth={speak:vi.fn(),cancel:vi.fn(),resume:vi.fn(),getVoices:vi.fn(()=>voices)};
+    vi.stubGlobal('speechSynthesis',synth);
+    vi.stubGlobal('SpeechSynthesisUtterance',class {
+      lang='';rate=1;pitch=1;volume=1;voice:any=null;onerror:any=null;
       constructor(public text:string){}
-    }
-    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
-      speak,cancel,resume,getVoices:()=>[{lang:'vi-VN',name:'Vietnamese'}]
-    }});
-    vi.stubGlobal('SpeechSynthesisUtterance',StubUtterance);
-    try {
-      mount();await connect();
-      await waitFor(()=>expect(speak).toHaveBeenCalledTimes(1));
-      expect(speak.mock.calls[0][0].text).toContain('cuộc thi sáng tạo Samsung');
-      expect(speak.mock.calls[0][0].lang).toBe('vi-VN');
-    } finally {
-      if(original)Object.defineProperty(window,'speechSynthesis',original);
-      else delete (window as any).speechSynthesis;
-      vi.stubGlobal('SpeechSynthesisUtterance',originalUtterance);
-    }
-  });
-  it('does not speak when Connect is not acknowledged',async()=>{
-    const speak=vi.fn();
-    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
-      speak,cancel:vi.fn(),resume:vi.fn(),getVoices:()=>[]
-    }});
-    vi.stubGlobal('SpeechSynthesisUtterance',class {constructor(public text:string){}});
-    fake.beforeRequest=async(action)=>{if(action==='connect')throw Error('Mất kết nối')};
+    });
+    return synth;
+  }
+  it('speaks synchronously on the click before a delayed Connect ACK, once only',async()=>{
+    const synth=mockSpeech();
+    let acknowledge:()=>void=()=>{};
+    fake.beforeRequest=async(action)=>{if(action==='connect')await new Promise<void>(resolve=>{acknowledge=resolve})};
     mount();
+    expect(synth.speak).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    const speech=synth.speak.mock.calls[0][0];
+    expect(speech.text).toContain('cuộc thi sáng tạo Samsung');
+    expect(speech.text).not.toContain('đã kết nối');
+    expect(speech.lang).toBe('vi-VN');expect(speech.voice.lang).toBe('vi-VN');
+    fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    await act(async()=>{acknowledge()});
     await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));
-    expect(speak).not.toHaveBeenCalled();
-    delete (window as any).speechSynthesis;
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+  });
+  it('still welcomes the user when the later connection request fails',async()=>{
+    const synth=mockSpeech();
+    fake.beforeRequest=async(action)=>{if(action==='connect')throw Error('Mất kết nối')};
+    mount();await connect();
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Mất kết nối')).toBeTruthy();
+  });
+  it('replays speech from the speaker button without sending robot commands',()=>{
+    const synth=mockSpeech();mount();
+    fireEvent.click(screen.getByRole('button',{name:'Phát lại lời chào'}));
+    expect(synth.speak).toHaveBeenCalledTimes(1);
+    expect(fake.requests).toEqual([]);
+    expect(synth.cancel).toHaveBeenCalledTimes(1);expect(synth.resume).toHaveBeenCalledTimes(1);
+  });
+  it('sets Vietnamese language even if the voice list has not loaded yet',()=>{
+    const synth=mockSpeech([]);mount();
+    fireEvent.click(screen.getByRole('button',{name:'Phát lại lời chào'}));
+    expect(synth.speak.mock.calls[0][0].lang).toBe('vi-VN');
+  });
+  it('shows audio errors without preventing the Python connection',async()=>{
+    const synth=mockSpeech();mount();await connect();
+    act(()=>synth.speak.mock.calls[0][0].onerror({error:'not-allowed'}));
+    expect(screen.getByText(/Chưa phát được lời chào/)).toBeTruthy();
+    expect(fake.requests.filter(x=>x.action==='connect')).toHaveLength(1);
   });
 });
 
