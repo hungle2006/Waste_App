@@ -3,16 +3,19 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {Room, RoomEvent, Track, type RemoteTrack, type RemoteTrackPublication} from "livekit-client";
 import type {GiftState, RobotRealtimeState} from "@/lib/robot-realtime";
 import MechanicalControl from "@/app/components/MechanicalControl";
+import VisionPanel, {FrameOverlay, robotRecognition} from "@/app/components/VisionPanel";
+import type {VisionFrame} from "@/lib/trash-vision";
 import {Bot, Camera, CircleStop, Gift, Maximize, RotateCcw, Wifi, WifiOff} from "lucide-react";
 
 type Mode = "manual" | "auto";
 const ROBOT_ID = process.env.NEXT_PUBLIC_ROBOT_ID?.trim() || "robot_01";
 const CAMERA_TRACK_NAME = process.env.NEXT_PUBLIC_CAMERA_TRACK_NAME?.trim() || "front_camera";
 
-function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, giftPending, giftError, onGift, onStop}: {
+function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, giftPending, giftError, onGift, onStop, frame}: {
   videoRef: React.RefObject<HTMLVideoElement | null>; connected: boolean | null;
   trackOnline: boolean; onReconnect: () => void;
   gift?: GiftState; giftAllowed: boolean; giftPending: boolean; giftError: string; onGift: () => void; onStop: () => void;
+  frame: VisionFrame | null;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -37,6 +40,7 @@ function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, 
     </div>
     <div className="camera-viewport camera-grid">
       <video ref={videoRef} autoPlay playsInline muted aria-label="Hình ảnh trực tiếp từ camera robot" className="h-full w-full object-contain"/>
+      {frame && <FrameOverlay frame={frame}/>}
       {!trackOnline && <div className="camera-placeholder"><Camera size={30}/><p className="mt-2 text-xs font-medium text-slate-300">{connected === false ? "Chưa kết nối được camera" : "Đang chờ hình ảnh từ robot"}</p><button type="button" onClick={onReconnect} className="mt-3 flex min-h-9 items-center gap-2 rounded-lg border border-slate-600 px-3 text-[11px] text-slate-300 hover:bg-slate-800"><RotateCcw size={13}/>Kết nối lại camera</button></div>}
     </div>
     <div className="gift-bar flex shrink-0 items-center justify-between gap-3 border-t border-slate-700 bg-slate-950 p-3">
@@ -50,6 +54,7 @@ function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, 
 export default function Page() {
   const [mode, setMode] = useState<Mode>("manual");
   const [robot, setRobot] = useState<RobotRealtimeState | null>(null);
+  const [frame, setFrame] = useState<VisionFrame | null>(null);
   const [bin, setBin] = useState<number | null>(null);
   const [last, setLast] = useState("Chưa gửi lệnh");
   const giftActionRef = useRef<(() => Promise<boolean>) | null>(null);
@@ -62,7 +67,10 @@ export default function Page() {
     giftActionRef.current=fn;setGiftActionReady(Boolean(fn));setGiftActionPending(pending);
   }, []);
   const mechanicalStopRef = useRef<(() => void) | null>(null);
-  const onRobotState = useCallback((next: RobotRealtimeState) => {setRobot(next);}, []);
+  const onRobotState = useCallback((next: RobotRealtimeState) => {
+    setRobot(next);
+    if (next.fresh && next.connected && (next.auto?.auto_running || next.auto_running)) setFrame(null);
+  }, []);
   const registerMechanicalStop = useCallback((fn: (() => void) | null) => {mechanicalStopRef.current = fn;}, []);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [livekitConnected, setLivekitConnected] = useState<boolean | null>(null);
@@ -107,7 +115,8 @@ export default function Page() {
  },[cameraSession]);
 
   const fresh = Boolean(robot?.connected && robot.fresh);
-  const target = fresh ? robot?.auto?.label : null;
+  const recognition = frame?.objects ?? robotRecognition(robot);
+  const target = recognition?.[0]?.label;
   const distanceReady = fresh && robot?.auto?.distance_ready;
   const tof = fresh && robot?.hardware.tof?.valid && (robot.hardware.tof.age_ms ?? Infinity) < 1500 ? robot.hardware.tof.mm : null;
   const distance = fresh ? robot?.auto?.tof_mm ?? tof : null;
@@ -128,13 +137,14 @@ export default function Page() {
     </header>
     <div className="operator-workspace">
       <section className="vision-column" aria-label="Camera và trạng thái robot">
-        <Cam videoRef={videoRef} connected={livekitConnected} trackOnline={trackOnline} gift={fresh?robot?.gift:undefined} giftAllowed={giftAllowed} giftPending={giftClickPending} giftError={giftError} onGift={()=>void dispenseGift()} onStop={stop} onReconnect={() => setCameraSession(session => session + 1)}/>
+        <Cam videoRef={videoRef} frame={frame} connected={livekitConnected} trackOnline={trackOnline} gift={fresh?robot?.gift:undefined} giftAllowed={giftAllowed} giftPending={giftClickPending} giftError={giftError} onGift={()=>void dispenseGift()} onStop={stop} onReconnect={() => setCameraSession(session => session + 1)}/>
         <div className="vision-telemetry">
           <div><span className="telemetry-label">Mục tiêu</span><strong className="truncate">{target || "Chưa xác nhận"}</strong></div>
           <div><span className="telemetry-label">Khoảng cách</span><strong className={distanceReady ? "text-emerald-700" : ""}>{distance != null ? `${(distance / 10).toFixed(1)} cm` : "—"}{distanceReady ? " ✓" : ""}</strong></div>
           <div><span className="telemetry-label">Kẹp · D19</span><strong>{ir === 0 ? "Có vật" : ir === 1 ? "Chưa có vật" : "—"}</strong></div>
           <div><span className="telemetry-label">Ngăn thùng</span><strong>{fresh && bin ? `BIN ${bin}` : "—"}</strong></div>
         </div>
+        <VisionPanel robot={robot} videoRef={videoRef} trackOnline={trackOnline} frame={frame} onFrame={setFrame}/>
         <div className="vision-summary" role="status"><span className={`h-2 w-2 shrink-0 rounded-full ${fresh ? "bg-emerald-500" : "bg-slate-300"}`}/><span className="min-w-0 flex-1 truncate">{fresh ? robot?.auto?.message || robot?.job || "Đang nhận trạng thái robot" : "Chạy Python trên máy robot rồi chọn Kết nối Python."}</span><span className="hidden max-w-[40%] truncate font-mono text-[10px] text-slate-400 xl:block" title={last}>{last}</span></div>
       </section>
       <MechanicalControl active autoMode={mode === "auto"} onRobotState={onRobotState} registerStop={registerMechanicalStop} registerGift={registerGift} onBinChange={setBin} onCommand={setLast}/>

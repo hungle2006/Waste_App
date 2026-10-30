@@ -4,7 +4,7 @@ import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
 const fake=vi.hoisted(()=>({state:null as any,onState:null as any,requests:[] as any[],clients:0,rooms:0,disconnects:0,beforeRequest:null as null | ((action:string,body:any)=>Promise<void>)}));
 vi.mock('@/lib/robot-realtime',()=>({RobotRealtimeClient:class {
   constructor(onState:any,private onTransport:any){fake.onState=onState;fake.clients++}
-  start(){this.onTransport(true,true);fake.onState(structuredClone(fake.state))}
+  start(){fake.state.auto.manual_wheels_available=!fake.state.auto.mechanics_enabled&&!fake.state.busy&&!fake.state.stopped;this.onTransport(true,true);fake.onState(structuredClone(fake.state))}
   close(){}
   async request(action:string,body:any={}){
     fake.requests.push({action,body});const a=fake.state.auto;
@@ -17,7 +17,7 @@ vi.mock('@/lib/robot-realtime',()=>({RobotRealtimeClient:class {
     if(action==='command'&&body.command==='GIFT DISPENSE'){fake.state.gift.busy=true;fake.state.gift.phase='opening';fake.state.gift.message='Đang mở cửa phát quà'}
     if(action==='command'&&body.command==='STOP'){if(fake.state.gift){fake.state.gift.busy=false;fake.state.gift.phase='interrupted';}
 a.auto_running=false;fake.state.auto_running=false;fake.state.stopped=true}
-    fake.onState(structuredClone(fake.state));return structuredClone(fake.state)
+    a.manual_wheels_available=!a.mechanics_enabled&&!fake.state.busy&&!fake.state.stopped;fake.onState(structuredClone(fake.state));return structuredClone(fake.state)
   }
 }}));
 vi.mock('livekit-client',()=>({
@@ -159,7 +159,7 @@ describe('Operator controls with robot ACK',()=>{
   expect(screen.getByRole('button',{name:'Tiến thẳng'}).hasAttribute('disabled')).toBe(false);
   chooseTab('Cánh tay');
   fireEvent.change(screen.getByRole('spinbutton',{name:'Xung Xoay càng kẹp'}),{target:{value:'2300'}});
-  fireEvent.click(screen.getAllByRole('button',{name:'Gửi',exact:true})[3]);
+  fireEvent.click(screen.getAllByRole('button',{name:'Gửi'})[3]);
   await waitFor(()=>expect(fake.requests.some(x=>x.body.joint==='d2'&&x.body.pulse_us===2300)).toBe(true));
  });
  it('shows range only after robot confirmation; routes grasp/release/STOP',async()=>{
@@ -218,9 +218,9 @@ describe('Operator controls with robot ACK',()=>{
  it('keeps the same camera and robot session when switching modes and control groups',async()=>{
   render(<Page/>);await connect();
   const video=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot');
-  fireEvent.click(screen.getByRole('button',{name:'AUTO',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'AUTO'}));
   chooseTab('Bánh xe');chooseTab('Thùng & nắp');chooseTab('Cánh tay');
-  fireEvent.click(screen.getByRole('button',{name:'MANUAL',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'MANUAL'}));
   expect(screen.getByLabelText('Hình ảnh trực tiếp từ camera robot')).toBe(video);
   expect(fake.clients).toBe(1);expect(fake.rooms).toBe(1);expect(fake.disconnects).toBe(0);
   expect(fake.requests.filter(x=>x.action!=='connect')).toEqual([]);
@@ -252,7 +252,7 @@ describe('Operator controls with robot ACK',()=>{
   fake.state.auto.operator_protocol=2;fake.state.auto.target_fresh=false;
   if(autoMode)fake.state.auto.mechanics_enabled=false;
   render(<MechanicalControl active autoMode={autoMode} registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);await connect();
-  const grab=screen.getByRole('button',{name:'Gắp theo cảm biến',exact:true});
+  const grab=screen.getByRole('button',{name:'Gắp theo cảm biến'});
   expect(grab.hasAttribute('disabled')).toBe(true);
   await act(async()=>{fake.state.auto.sensor_grasp_ready=true;fake.state.auto.sensor_grasp_reason='Sẵn sàng';fake.onState(structuredClone(fake.state))});
   expect(grab.hasAttribute('disabled')).toBe(false);fireEvent.click(grab);
@@ -273,7 +273,7 @@ describe('Operator controls with robot ACK',()=>{
  it('V3.15 keeps existing controls but cannot send V3.16 operator commands',async()=>{
   mount();await connect();
   expect(screen.getByRole('button',{name:'Xoay phải 10 độ'}).hasAttribute('disabled')).toBe(true);
-  expect(screen.getByRole('button',{name:'Gắp theo cảm biến',exact:true}).hasAttribute('disabled')).toBe(true);
+  expect(screen.getByRole('button',{name:'Gắp theo cảm biến'}).hasAttribute('disabled')).toBe(true);
   expect(screen.getByRole('button',{name:'Bắt đầu AUTO'}).hasAttribute('disabled')).toBe(false);
  });
  it('4G: refreshes DRIVE while the first Python ACK is still delayed, bounded to 4 outstanding',async()=>{
@@ -326,19 +326,19 @@ describe('Operator controls with robot ACK',()=>{
 describe('D22 gift control inside the camera panel',()=>{
  it('submits one gift request and locks repeated clicks until robot completion',async()=>{
   render(<Page/>);
-  const gift=await screen.findByRole('button',{name:'Đổi quà',exact:true});
+  const gift=await screen.findByRole('button',{name:'Đổi quà'});
   await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));
   fireEvent.click(gift);fireEvent.click(gift);
   await waitFor(()=>expect(fake.requests.filter(x=>x.body.command==='GIFT DISPENSE')).toHaveLength(1));
   expect(screen.getByRole('button',{name:'Đang phát quà…'}).hasAttribute('disabled')).toBe(true);
   await act(async()=>{fake.state.gift.busy=false;fake.state.gift.phase='done';fake.state.gift.message='Đã hoàn tất chu trình phát quà';fake.onState(structuredClone(fake.state));});
-  expect(screen.getByRole('button',{name:'Đổi quà',exact:true}).hasAttribute('disabled')).toBe(false);
+  expect(screen.getByRole('button',{name:'Đổi quà'}).hasAttribute('disabled')).toBe(false);
   expect(screen.getByText('Đã hoàn tất chu trình phát quà')).toBeTruthy();
  });
  it('can dispense with green AUTO without changing mechanics ownership',async()=>{
   fake.state.auto.auto_running=true;fake.state.auto_running=true;fake.state.busy=true;
   render(<Page/>);
-  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  const gift=screen.getByRole('button',{name:'Đổi quà'});
   await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));fireEvent.click(gift);
   await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='GIFT DISPENSE')).toBe(true));
   expect(fake.state.auto_running).toBe(true);
@@ -349,7 +349,7 @@ describe('D22 gift control inside the camera panel',()=>{
   if(kind==='stopped')fake.state.stopped=true;
   if(kind==='old firmware')fake.state.gift.available=false;
   render(<Page/>);
-  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  const gift=screen.getByRole('button',{name:'Đổi quà'});
   expect(gift.hasAttribute('disabled')).toBe(true);fireEvent.click(gift);
   expect(fake.requests.some(x=>x.body.command==='GIFT DISPENSE')).toBe(false);
  });
@@ -361,13 +361,13 @@ describe('D22 gift control inside the camera panel',()=>{
   Object.defineProperty(panel,'requestFullscreen',{configurable:true,value:enter});
   fireEvent.click(screen.getByRole('button',{name:'Bật hoặc tắt toàn màn hình camera'}));
   await waitFor(()=>expect(enter).toHaveBeenCalledTimes(1));
-  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà',exact:true}))).toBe(true);
+  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà'}))).toBe(true);
   expect(panel.contains(screen.getByRole('button',{name:'Dừng robot tại camera'}))).toBe(true);
  });
  it('shows a rejected gift request inside the camera panel',async()=>{
   fake.beforeRequest=async(_action,body)=>{if(body.command==='GIFT DISPENSE')throw Error('Cần nạp firmware D22')};
   render(<Page/>);
-  const gift=screen.getByRole('button',{name:'Đổi quà',exact:true});
+  const gift=screen.getByRole('button',{name:'Đổi quà'});
   await waitFor(()=>expect(gift.hasAttribute('disabled')).toBe(false));fireEvent.click(gift);
   const panel=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot').closest('.camera-panel')!;
   await waitFor(()=>expect(panel.textContent).toContain('Cần nạp firmware D22'));
@@ -381,7 +381,7 @@ describe('D22 gift control inside the camera panel',()=>{
   fireEvent.click(toggle);
   await waitFor(()=>expect(panel.dataset.expanded).toBe('true'));
   expect(panel.style.position).toBe('fixed');
-  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà',exact:true}))).toBe(true);
+  expect(panel.contains(screen.getByRole('button',{name:'Đổi quà'}))).toBe(true);
   expect(panel.contains(screen.getByRole('button',{name:'Dừng robot tại camera'}))).toBe(true);
   fireEvent.keyDown(document,{key:'Escape'});
   expect(panel.dataset.expanded).toBe('false');
