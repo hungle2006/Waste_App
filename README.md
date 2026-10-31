@@ -1,29 +1,15 @@
 # Waste Robot Control · V3.16
 
-## Nhận diện → Firebase và màn hình laptop
+## Nhận diện và màn hình laptop
 
-Kết quả mục tiêu AI mới từ robot được hiển thị trong **Nhận diện rác** và tự đồng bộ
-vào Realtime Database của `smart-genaiot`, đúng đường dẫn `Robot thu gom 1/TrashClasses`:
-BIN 1 → `Recyclable`, BIN 2 → `Organic`, BIN 3 → `Hazardous`, BIN 4 → `Others`.
-Bốn số là số vật trong kết quả đang hiển thị, không phải tổng thu gom: robot đang khóa
-một chai tái chế thì `Recyclable=1` và ba trường khác bằng 0. Kết quả lặp lại không cộng thêm.
-Các ứng dụng khác đang đọc bốn số này cần hiểu chúng theo cùng ý nghĩa.
+Nhận diện từ robot và nút **Phân tích ảnh** vẫn hiển thị nhãn, khung ảnh cùng số
+vật từng loại trên app. Chọn **Trực tiếp** để trở về camera; bật AUTO cũng tự
+trở về nguồn robot. Khung nhận diện được vẽ trên đúng ảnh đã gửi Modal.
 
-Khi camera có hình và AUTO không chiếm dịch vụ AI, nút **Phân tích ảnh** chụp một JPEG,
-gửi tới endpoint Modal hiện có và hiển thị khung nhận diện trên chính ảnh đã gửi.
-Ảnh có nhiều vật sẽ đồng bộ số vật từng loại. Ảnh được AI xác nhận không thấy rác
-sẽ ghi bốn số 0. Chọn **Trực tiếp** để trở về nguồn nhận diện robot; bật AUTO cũng
-tự trở về nguồn robot. Không vẽ tọa độ ảnh cũ lên video mới và không gửi lệnh cơ khí.
-
-Mất kết nối hoặc chưa có kết quả mới không ghi số 0. Trạng thái **Đã đồng bộ Firebase**
-chỉ xuất hiện sau phản hồi ghi thành công; lỗi ghi được hiển thị và thử lại có giới hạn tuổi
-kết quả. Mỗi tab chỉ gửi một yêu cầu đồng bộ tại một thời điểm và ưu tiên kết quả mới nhất.
-Đồng bộ này chạy khi trang Vercel đang mở; đóng trang không tiếp tục đồng bộ ngầm.
-
-API chỉ PATCH bốn trường đã có, giữ các mục khác. Nó sử dụng quyền Realtime Database
-hiện tại, không sửa Security Rules hoặc lấy quyền từ Firebase Web API key.
-Nếu dự án hạn chế quyền ghi sau này, bổ sung xác thực Firebase ở server thay vì mở Rules.
-Không thêm tài khoản hay khóa quản trị vào mã trình duyệt.
+Chức năng gửi kết quả lên Firebase đã tắt. Giao diện không tạo yêu cầu đồng bộ;
+mã ghi database đã được gỡ. Endpoint cũ `/api/vision/sync` trả HTTP 410, không
+thực hiện ghi, kể cả khi tab cũ gửi lại yêu cầu. Việc này không xóa dữ liệu đã có
+trên Firebase và không thay đổi Rules của dự án.
 
 Laptop từ 960 px dùng camera bên trái và bảng điều khiển bên phải. Trang cuộn dọc
 tự nhiên bằng con lăn, vuốt hai ngón trên touchpad hoặc thanh cuộn trình duyệt,

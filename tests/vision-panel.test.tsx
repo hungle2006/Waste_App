@@ -1,22 +1,27 @@
 import React from "react";
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {cleanup, render, screen, waitFor} from "@testing-library/react";
+import {cleanup, render, screen} from "@testing-library/react";
 import VisionPanel, {FrameOverlay, robotRecognition} from "../app/components/VisionPanel";
 import type {RobotRealtimeState} from "../lib/robot-realtime";
-import {countObjects, type VisionFrame} from "../lib/trash-vision";
+import {type VisionFrame} from "../lib/trash-vision";
 
 afterEach(() => {cleanup(); vi.unstubAllGlobals();});
 const state = {connected: true, fresh: true, auto: {label: "plastic bottle", bin: 1, target_fresh: true}} as RobotRealtimeState;
 describe("recognition on the camera panel", () => {
-  it("uses the same fresh category for display and Firebase, with no motor commands", async () => {
-    const fetcher = vi.fn().mockImplementation(async (_url, init) => Response.json({synced: true, counts: countObjects(JSON.parse(init.body).objects)}));
-    vi.stubGlobal("fetch", fetcher);
-    render(<VisionPanel robot={state} videoRef={{current: null}} trackOnline={false} frame={null} onFrame={vi.fn()}/>);
+  it("displays recognition changes and analyzed frames without Firebase requests", async () => {
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    const props = {videoRef: {current: null}, trackOnline: false, onFrame: vi.fn()};
+    const {rerender} = render(<VisionPanel {...props} robot={state} frame={null}/>);
     expect(screen.getByText("plastic bottle")).toBeTruthy();
-    await waitFor(() => expect(screen.getByText("Đã đồng bộ Firebase")).toBeTruthy());
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(fetcher.mock.calls[0][0]).toBe("/api/vision/sync");
-    expect(JSON.parse(fetcher.mock.calls[0][1].body).objects).toEqual([{label: "plastic bottle", bin: 1}]);
+    rerender(<VisionPanel {...props} robot={{...state, auto: {...state.auto, label: "can", bin: 4}}} frame={null}/>);
+    expect(screen.getByText("can")).toBeTruthy();
+    const frame: VisionFrame = {url: "data:image/jpeg;base64,test", width: 640, height: 480, capturedAt: 1,
+      objects: [{label: "apple", bin: 2}]};
+    rerender(<VisionPanel {...props} robot={state} frame={frame}/>);
+    expect(screen.getByText("apple")).toBeTruthy();
+    await new Promise(resolve => setTimeout(resolve, 350));
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(screen.queryByText(/đồng bộ Firebase/i)).toBeNull();
   });
   it("does not reuse stale or disconnected robot targets", () => {
     expect(robotRecognition({...state, fresh: false})).toBeNull();

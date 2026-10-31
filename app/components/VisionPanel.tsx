@@ -1,9 +1,8 @@
 "use client";
 import {useEffect, useRef, useState} from "react";
-import {Cloud, Focus, LoaderCircle, Video} from "lucide-react";
+import {Focus, LoaderCircle, Video} from "lucide-react";
 import type {RobotRealtimeState} from "@/lib/robot-realtime";
 import {TRASH_TYPES, countObjects, parseObjects, type TrashObject, type VisionFrame} from "@/lib/trash-vision";
-import {TrashSync, type SyncStatus} from "@/lib/trash-sync";
 
 export function robotRecognition(robot: RobotRealtimeState | null): TrashObject[] | null {
   const auto = robot?.auto;
@@ -18,23 +17,17 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
   robot: RobotRealtimeState | null; videoRef: React.RefObject<HTMLVideoElement | null>;
   trackOnline: boolean; frame: VisionFrame | null; onFrame: (frame: VisionFrame | null) => void;
 }) {
-  const [sync, setSync] = useState<SyncStatus>({state: "waiting", message: "Chờ kết quả nhận diện mới"});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const syncRef = useRef<TrashSync | null>(null);
   const controller = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const busyRef = useRef(false);
   const robotObjects = robotRecognition(robot);
   const objects = frame?.objects ?? robotObjects;
-  const signature = objects === null ? "waiting" : JSON.stringify(objects.map(({label, bin}) => ({label, bin})));
-  const objectsRef = useRef(objects); objectsRef.current = objects;
   useEffect(() => {
     mounted.current = true;
-    const queue = new TrashSync(setSync); syncRef.current = queue;
-    return () => { mounted.current = false; queue.close(); controller.current?.abort(); };
+    return () => { mounted.current = false; controller.current?.abort(); };
   }, []);
-  useEffect(() => { syncRef.current?.observe(objectsRef.current); }, [signature]);
   const counts = objects === null ? null : countObjects(objects);
   const autoActive = Boolean(robot?.fresh && robot?.connected && (robot?.auto?.auto_running || robot?.auto_running));
   const autoActiveRef = useRef(autoActive); autoActiveRef.current = autoActive;
@@ -69,13 +62,13 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
     }
   };
 
-  return <section className="recognition-panel" aria-label="Nhận diện và đồng bộ Firebase">
+  return <section className="recognition-panel" aria-label="Nhận diện rác">
     <div className="recognition-heading">
-      <div><h2><Focus size={15}/>Nhận diện rác</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả từ robot · tự đồng bộ Firebase"}</p></div>
+      <div><h2><Focus size={15}/>Nhận diện rác</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả từ robot"}</p></div>
       <div className="recognition-actions">
         {frame && <button type="button" onClick={() => onFrame(null)} title="Trở lại camera trực tiếp"><Video size={14}/><span>Trực tiếp</span></button>}
         <button type="button" disabled={!trackOnline || busy || autoActive} onClick={() => void capture()}
-          title={autoActive ? "AUTO đang nhận diện; kết quả robot tự đồng bộ" : "Chụp và nhận diện một khung ảnh camera"}>
+          title={autoActive ? "AUTO đang nhận diện từ camera robot" : "Chụp và nhận diện một khung ảnh camera"}>
           {busy ? <LoaderCircle size={14} className="animate-spin"/> : <Focus size={14}/>}<span>{busy ? "Đang phân tích…" : "Phân tích ảnh"}</span>
         </button>
       </div>
@@ -84,7 +77,7 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
       <i style={{background: TRASH_TYPES.find(t => t.bin === object.bin)?.color}}/>{object.label}<small>{TRASH_TYPES.find(t => t.bin === object.bin)?.title}</small>
     </span>)}</div>
     <div className="recognition-counts">{TRASH_TYPES.map(t => <div key={t.field}><i style={{background: t.color}}/><span>{t.title}</span><strong>{counts ? counts[t.field] : "—"}</strong></div>)}</div>
-    <div className="recognition-sync" data-state={sync.state} role="status"><Cloud size={13}/><span>{error || sync.message}</span><small>Số vật trong kết quả mới nhất</small></div>
+    <div className="recognition-sync" data-state={error ? "error" : "waiting"} role="status"><span>{error}</span><small>Số vật trong kết quả mới nhất</small></div>
   </section>;
 }
 

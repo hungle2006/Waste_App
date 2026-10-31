@@ -1,4 +1,4 @@
-import {isSameOrigin} from "@/lib/firebase-trash";
+import {isSameOrigin} from "@/lib/request-origin";
 import {parseModalResult} from "@/lib/trash-vision";
 
 export const dynamic = "force-dynamic";
