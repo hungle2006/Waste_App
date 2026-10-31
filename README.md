@@ -67,6 +67,20 @@ trang, dùng giọng tiếng Việt có sẵn; tốc độ 0,94, cao độ 1,05,
 Nút loa **Phát lại lời chào** cho phép nghe lại mà không gửi lệnh robot.
 Lỗi âm thanh có thông báo riêng và không chặn việc kết nối Python.
 
+## Nhích thêm 540 ms sau khi thả nút bánh xe
+
+Tất cả nút tiến, lùi, đi ngang, chéo, quay tại chỗ và cua vẫn làm mới DRIVE mỗi
+180 ms khi được giữ. Khi thả chuột/ngón tay hoặc nhả Space/Enter bình thường,
+app tiếp tục làm mới cùng hướng thêm 540 ms rồi gửi XM. Bấm nhả nhanh vì thế
+vẫn tạo một lượt nhích ngắn. Đây là thời gian phía app; thời gian robot dừng
+thực tế phụ thuộc mạng và phản hồi phần cứng. Không sửa Python, Arduino, TTL
+500 ms, PWM hoặc điều kiện cảm biến.
+
+Dừng bánh, DỪNG/STOP, Giữ vị trí, đổi nhóm điều khiển, bàn giao cơ khí, mất focus,
+ẩn trang, pointercancel, mất trạng thái mới hoặc mất quyền điều khiển đều hủy
+nhịp nhích và gửi dừng ngay. Pointerup lặp không kéo dài thêm 540 ms; giữ lại
+cùng nút trong thời gian nhích sẽ tiếp tục chạy mà không tạo nhịp dừng/khởi động.
+
 ## Phát triển và kiểm tra
 
 ```sh

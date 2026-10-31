@@ -40,7 +40,7 @@ beforeEach(()=>{
  config:{limits:{p1:[500,3500],p10:[500,2500],p11:[500,2500],d2:[500,2500]},poses:{SEARCH:{...pose},SETUP:{...pose},PLACE:{...pose},REAR:{...pose}},grip:{open:600,close:1400},bins:{RECYCLE:2350,ORGANIC:1000,HAZARD:1450,OTHER:1900}},
  auto:{operator_protocol:1,mechanics_enabled:true,auto_running:false,planned_commands:[],target_fresh:false,distance_ready:false}};
 });
-afterEach(()=>{cleanup();vi.unstubAllGlobals()});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals()});
 const mount=()=>render(<MechanicalControl active autoMode registerStop={()=>{}} onBinChange={()=>{}} onCommand={()=>{}}/>);
 async function connect(){fireEvent.click(screen.getByRole('button',{name:'Kết nối Python'}));await waitFor(()=>expect(screen.getByRole('button',{name:'Kết nối Python'}).hasAttribute('disabled')).toBe(false));}
 describe('Samsung contest greeting in the Vercel browser',()=>{
@@ -406,5 +406,68 @@ describe('D22 gift control inside the camera panel',()=>{
   fireEvent.click(toggle);
   expect(panel.dataset.expanded).toBe('false');
   expect(fake.requests).toHaveLength(0);
+ });
+});
+
+describe('App-only 540ms movement after normal release',()=>{
+ const prepare=async()=>{
+  fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+  mount();await connect();chooseTab('Bánh xe');vi.useFakeTimers();
+ };
+ const advance=async(ms:number)=>{await act(async()=>{await vi.advanceTimersByTimeAsync(ms)})};
+ const commands=()=>fake.requests.map(x=>x.body.command).filter(Boolean);
+ it.each(['Tiến thẳng','Lùi thẳng','Đi ngang trái','Đi ngang phải','Tiến chéo trái','Tiến chéo phải','Lùi chéo trái','Lùi chéo phải','Quay tại chỗ trái','Quay tại chỗ phải'])(
+  '%s renews after key release and stops at 540ms',async(name)=>{
+   await prepare();const wheel=screen.getByRole('button',{name});
+   fireEvent.keyDown(wheel,{key:' '});await advance(0);
+   fireEvent.keyUp(wheel,{key:' '});
+   expect(commands()).not.toContain('XM');
+   await advance(539);
+   expect(commands()).not.toContain('XM');
+   expect(commands().filter((x:string)=>x.startsWith('DRIVE ')).length).toBeGreaterThan(1);
+   await advance(1);expect(commands().filter((x:string)=>x==='XM')).toHaveLength(1);
+   const count=commands().length;await advance(1000);expect(commands()).toHaveLength(count);
+  });
+ it('duplicate pointerup and normal capture loss do not cancel or extend the tail',async()=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);
+  fireEvent.pointerUp(wheel);fireEvent.lostPointerCapture(wheel);
+  await advance(300);fireEvent.pointerUp(window);
+  await advance(239);expect(commands()).not.toContain('XM');
+  await advance(1);expect(commands().filter((x:string)=>x==='XM')).toHaveLength(1);
+ });
+ it.each(['Dừng bánh','Dừng cơ khí','Giữ vị trí'])('%s cancels the tail immediately',async(name)=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);fireEvent.keyUp(wheel,{key:' '});
+  fireEvent.click(screen.getByRole('button',{name}));await advance(0);
+  expect(commands().some((x:string)=>['XM','STOP','HOLD'].includes(x))).toBe(true);
+  const count=commands().length;await advance(800);expect(commands()).toHaveLength(count);
+ });
+ it.each(['blur','pointercancel'])('%s immediately cancels the movement tail',async(event)=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);fireEvent.keyUp(wheel,{key:' '});
+  fireEvent(window,new Event(event));await advance(0);
+  expect(commands()).toContain('XM');const count=commands().length;
+  await advance(800);expect(commands()).toHaveLength(count);
+ });
+ it('switching tabs cancels the tail immediately',async()=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);fireEvent.keyUp(wheel,{key:' '});
+  chooseTab('Cánh tay');await advance(0);expect(commands()).toContain('XM');
+  const count=commands().length;await advance(800);expect(commands()).toHaveLength(count);
+ });
+ it('re-holding the same direction cancels the old release deadline',async()=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);fireEvent.keyUp(wheel,{key:' '});
+  await advance(300);fireEvent.keyDown(wheel,{key:' '});
+  await advance(300);expect(commands()).not.toContain('XM');
+  fireEvent.keyUp(wheel,{key:' '});await advance(539);expect(commands()).not.toContain('XM');
+  await advance(1);expect(commands().filter((x:string)=>x==='XM')).toHaveLength(1);
+ });
+ it('stale robot state aborts the tail before 540ms',async()=>{
+  await prepare();const wheel=screen.getByRole('button',{name:'Tiến thẳng'});
+  fireEvent.keyDown(wheel,{key:' '});await advance(0);fireEvent.keyUp(wheel,{key:' '});
+  act(()=>{fake.state.fresh=false;fake.onState(structuredClone(fake.state))});
+  await advance(180);expect(commands()).toContain('XM');
  });
 });

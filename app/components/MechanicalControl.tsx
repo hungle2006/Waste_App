@@ -64,11 +64,13 @@ const button = "btn flex min-h-11 items-center justify-center gap-2 rounded-xl b
 // Web-only 4G improvement. Backend still enforces a 500 ms DRIVE packet TTL,
 // a motor dead-man lease, command epochs, and strict operator ownership.
 const DRIVE_REFRESH_MS = 180;
+const DRIVE_RELEASE_TAIL_MS = 540;
 const DRIVE_MAX_IN_FLIGHT = 4;
 const DRIVE_ACK_WATCHDOG_MS = 1600;
 type DriveSession = {
   mode: string; epoch: number; speed: number;
   inFlight: number; lastAckAt: number;
+  releaseUntil?: number;
 };
 
 /** Frontend-only: use Jetson's existing POSE SEARCH command; never bypass physical interlocks. */
@@ -156,11 +158,13 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   };
   const [speed, setSpeed] = useState(20);
   const [driveHeld, setDriveHeld] = useState("");
+  const [driveReleased, setDriveReleased] = useState(false);
   const manualHandoverAttemptedRef = useRef(false);
   const [tab, setTab] = useState<ControlTab>("arm");
   const controlsScrollRef = useRef<HTMLDivElement | null>(null);
   const driveRef = useRef<DriveSession | null>(null);
   const driveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const driveReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const realtimeRef = useRef<RobotRealtimeClient | null>(null);
   const [brokerOnline, setBrokerOnline] = useState(false);
   const [terminalLogs, setTerminalLogs] = useState<TerminalLogEntry[]>([]);
@@ -224,7 +228,10 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     if ("command" in payload && ["STOP", "XM", "HOLD"].includes(payload.command)) {
       driveRef.current = null;
       if (driveTimer.current) clearTimeout(driveTimer.current);
+      if (driveReleaseTimer.current) clearTimeout(driveReleaseTimer.current);
+      driveReleaseTimer.current = null;
       setDriveHeld("");
+      setDriveReleased(false);
     }
     if (!realtimeRef.current) { setMessage("Kết nối Supabase trước."); return false; }
     if (pendingRef.current && !urgent) return false;
@@ -263,14 +270,39 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     return Promise.resolve(true);
   }, [mutate]);
 
+  // A normal finger/key release keeps renewing this one session for 540 ms.
+  // Repeated pointerup events must never extend that deadline.
+  const finishDrive = useCallback(() => {
+    const session = driveRef.current;
+    if (!session || session.releaseUntil !== undefined) return;
+    session.releaseUntil = Date.now() + DRIVE_RELEASE_TAIL_MS;
+    setDriveReleased(true);
+    setMessage("Đã thả nút · nhích thêm khoảng 540 ms rồi dừng. Bấm Dừng bánh để dừng ngay.");
+    driveReleaseTimer.current = setTimeout(() => {
+      if (driveRef.current === session) void releaseDrive();
+    }, DRIVE_RELEASE_TAIL_MS);
+  }, [releaseDrive]);
+
   const startDrive = (mode: string) => {
     const current = robotRef.current;
-    if (driveRef.current || pendingRef.current || !active || !connected || !current?.connected ||
+    if (pendingRef.current || !active || !connected || !current?.connected ||
         !current.fresh || current.stopped || current.busy || current.auto?.transitioning ||
         current.auto?.mechanics_enabled !== false || current.auto?.manual_wheels_available !== true) return;
+    const previous = driveRef.current;
+    if (previous?.releaseUntil !== undefined) {
+      if (previous.mode !== mode) { void releaseDrive(); return; }
+      // Re-holding the same button takes over its tail without a stop/start pulse.
+      if (driveReleaseTimer.current) clearTimeout(driveReleaseTimer.current);
+      driveReleaseTimer.current = null;
+      delete previous.releaseUntil;
+      setDriveReleased(false);
+      return;
+    }
+    if (previous) return;
     const session: DriveSession = { mode, epoch: current.epoch, speed, inFlight: 0, lastAckAt: Date.now() };
     driveRef.current = session;
     setDriveHeld(mode);
+    setDriveReleased(false);
     const generation = generationRef.current;
     const abortDrive = (reason: string) => {
       if (driveRef.current !== session) return;
@@ -279,6 +311,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     };
     const tick = () => {
       if (driveRef.current !== session || generation !== generationRef.current) return;
+      if (session.releaseUntil !== undefined && Date.now() >= session.releaseUntil) {
+        void releaseDrive(); return;
+      }
       const state = robotRef.current;
       if (!active || !connected || !state?.fresh || !state.connected || state.stopped ||
           state.epoch !== session.epoch || state.busy || state.auto?.transitioning ||
@@ -306,7 +341,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
             }
             session.lastAckAt = Date.now();
             applyState(next);
-            setMessage(`Đang giữ nút · PWM ${session.speed} · đã có ACK. Thả để dừng.`);
+            setMessage(session.releaseUntil !== undefined
+              ? "Đã thả nút · đang nhích thêm tối đa khoảng 540 ms. Bấm Dừng bánh để dừng ngay."
+              : `Đang giữ nút · PWM ${session.speed} · đã có ACK. Thả sẽ nhích thêm 540 ms.`);
           })
           .catch(error => {
             session.inFlight--;
@@ -327,21 +364,22 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   useEffect(() => {
     const hidden = () => { if (document.hidden) releaseDrive(); };
     window.addEventListener("blur", releaseDrive);
-    window.addEventListener("pointerup", releaseDrive);
+    window.addEventListener("pointerup", finishDrive);
     window.addEventListener("pointercancel", releaseDrive);
     document.addEventListener("visibilitychange", hidden);
     return () => {
       window.removeEventListener("blur", releaseDrive);
-      window.removeEventListener("pointerup", releaseDrive);
+      window.removeEventListener("pointerup", finishDrive);
       window.removeEventListener("pointercancel", releaseDrive);
       document.removeEventListener("visibilitychange", hidden);
       if (driveTimer.current) clearTimeout(driveTimer.current);
+      if (driveReleaseTimer.current) clearTimeout(driveReleaseTimer.current);
       if (driveRef.current) {
         driveRef.current = null;
         void request("command", { command: "XM", epoch: robotRef.current?.epoch ?? 0 }).catch(() => {});
       }
     };
-  }, [releaseDrive, request]);
+  }, [finishDrive, releaseDrive, request]);
 
   useEffect(() => {
     registerStop(() => { void mutate({ command: "STOP" }, "command", true); });
@@ -467,9 +505,10 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const driveButton = (mode: string, title: string, symbol?: string) => <button key={mode} type="button"
     aria-label={title} aria-pressed={driveHeld === mode} disabled={!canDrive}
     onPointerDown={e => { if (e.button !== 0) return; e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); startDrive(mode); }}
-    onPointerUp={releaseDrive} onPointerCancel={releaseDrive} onLostPointerCapture={releaseDrive}
+    onPointerUp={finishDrive} onPointerCancel={releaseDrive}
+    onLostPointerCapture={() => { if (driveRef.current?.releaseUntil === undefined) void releaseDrive(); }}
     onKeyDown={e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); startDrive(mode); } }}
-    onKeyUp={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); releaseDrive(); } }} onBlur={releaseDrive}
+    onKeyUp={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); finishDrive(); } }} onBlur={releaseDrive}
     className={`btn flex min-h-[60px] touch-none select-none flex-col items-center justify-center gap-1 rounded-xl border px-1 text-center disabled:opacity-35 ${driveHeld === mode ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-slate-50 hover:border-emerald-300"}`}>
     {symbol && <span aria-hidden="true" className="text-2xl leading-none">{symbol}</span>}<span className="text-[10px] font-semibold">{title}</span>
   </button>;
@@ -640,10 +679,10 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         </details>
       </div>
       <div role="tabpanel" id="control-panel-drive" aria-labelledby="control-tab-drive" hidden={tab !== "drive"} tabIndex={0}>
-        <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="control-section-title"><Radio size={16}/>Di chuyển Mecanum</h3><p className="mt-1 text-xs text-slate-500">Giữ để chạy · thả để dừng</p></div><label className="flex items-center gap-2 text-xs text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => {const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n);}} className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center font-bold text-emerald-700"/></label></div>
+        <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="control-section-title"><Radio size={16}/>Di chuyển Mecanum</h3><p className="mt-1 text-xs text-slate-500">Giữ để chạy · thả sẽ nhích thêm 540 ms</p></div><label className="flex items-center gap-2 text-xs text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => {const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n);}} className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center font-bold text-emerald-700"/></label></div>
         <div className="drive-pad grid grid-cols-3 gap-2">{DIRECTIONS.map(([mode, title, symbol]) => mode === "STOP" ? <button key={mode} aria-label={title} onClick={() => void mutate({command:"XM"}, "command", true)} className="btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button> : driveButton(mode, title, symbol))}</div>
         <div className="mt-2 grid grid-cols-2 gap-2">{TURNS.map(([mode,title,symbol]) => driveButton(mode,title,symbol))}</div>
-        <p role="status" className={`mt-3 text-xs ${canDrive ? "text-emerald-700" : "text-amber-700"}`}>{driveStatus}</p>
+        <p role="status" className={`mt-3 text-xs ${canDrive ? "text-emerald-700" : "text-amber-700"}`}>{driveReleased ? "Đã thả nút · đang nhích thêm 540 ms; Dừng bánh sẽ dừng ngay." : driveStatus}</p>
         <details className="control-details mt-4"><summary>Cua theo cung & trạng thái 4 bánh</summary><div className="mt-3 grid grid-cols-2 gap-2">{ARCS.map(([mode,title]) => driveButton(mode,title))}</div><div className="mt-3 grid grid-cols-2 gap-2">{WHEELS.map(([name,position,sign],i) => <div key={name} className="rounded-lg bg-slate-50 p-3 text-[10px] text-slate-500"><b>{name}</b> · {position}<span className="float-right font-mono font-bold">{hardware.motors?.[i] ?? "—"}</span><span className="mt-1 block">Chiều tiến: PWM {sign}</span></div>)}</div><p className="mt-3 text-[11px] text-slate-500">Hướng theo robot nhìn từ sau ra trước. Mất lệnh làm mới, Arduino dừng bánh sau tối đa 500 ms.</p></details>
       </div>
       <div role="tabpanel" id="control-panel-bins" aria-labelledby="control-tab-bins" hidden={tab !== "bins"} tabIndex={0}>
