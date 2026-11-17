@@ -5,17 +5,18 @@ import type {GiftState, RobotRealtimeState} from "@/lib/robot-realtime";
 import MechanicalControl from "@/app/components/MechanicalControl";
 import VisionPanel, {FrameOverlay, robotRecognition} from "@/app/components/VisionPanel";
 import type {VisionFrame} from "@/lib/trash-vision";
-import {Camera, CircleStop, Gift, Maximize, RotateCcw, Wifi, WifiOff} from "lucide-react";
+import {ArrowLeftRight, ArrowUpLeft, Camera, ChevronDown, CircleStop, Gift, Maximize, RotateCcw, Wifi, WifiOff} from "lucide-react";
 
 type Mode = "manual" | "auto";
 const ROBOT_ID = process.env.NEXT_PUBLIC_ROBOT_ID?.trim() || "robot_01";
 const CAMERA_TRACK_NAME = process.env.NEXT_PUBLIC_CAMERA_TRACK_NAME?.trim() || "front_camera";
 
-function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, giftPending, giftError, onGift, onStop, frame}: {
+function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, giftPending, giftError, onGift, onStop, frame, docked, dockSide, onMoveDock, onReturnToCamera, onJumpToControls}: {
   videoRef: React.RefObject<HTMLVideoElement | null>; connected: boolean | null;
   trackOnline: boolean; onReconnect: () => void;
   gift?: GiftState; giftAllowed: boolean; giftPending: boolean; giftError: string; onGift: () => void; onStop: () => void;
   frame: VisionFrame | null;
+  docked: boolean; dockSide: "left" | "right"; onMoveDock: () => void; onReturnToCamera: () => void; onJumpToControls: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -33,10 +34,10 @@ function Cam({videoRef, connected, trackOnline, onReconnect, gift, giftAllowed, 
       else setExpanded(true);
     } catch {setExpanded(true);}
   };
-  return <div ref={panelRef} className="camera-panel" data-expanded={expanded} style={expanded ? {position:"fixed",inset:0,zIndex:100,width:"100vw",height:"100dvh",borderRadius:0} : undefined}>
+  return <div ref={panelRef} className="camera-panel" data-expanded={expanded} data-docked={docked} data-dock-side={dockSide} data-online={trackOnline} style={expanded ? {position:"fixed",inset:0,zIndex:100,width:"100vw",height:"100dvh",borderRadius:0} : undefined}>
     <div className="camera-heading">
       <div className="flex min-w-0 items-center gap-2"><Camera size={17} className="text-emerald-400"/><h2 className="text-xs font-semibold">CAMERA TRỰC TIẾP</h2></div>
-      <div className="flex items-center gap-2"><span role="status" className={`text-[10px] font-bold ${trackOnline ? "text-emerald-400" : "text-slate-400"}`}>{trackOnline ? "● TRỰC TIẾP" : connected === false ? "○ MẤT KẾT NỐI" : "○ ĐANG CHỜ"}</span><button type="button" onClick={toggleFullscreen} aria-label="Bật hoặc tắt toàn màn hình camera" title="Toàn màn hình camera" className="camera-icon-button"><Maximize size={15}/></button></div>
+      <div className="camera-primary-actions flex items-center gap-2"><button type="button" onClick={onJumpToControls} className="camera-jump-button" aria-label="Đến bảng điều khiển robot">Điều khiển <ChevronDown size={14}/></button><span role="status" className={`text-[10px] font-bold ${trackOnline ? "text-emerald-400" : "text-slate-400"}`}>{trackOnline ? "● TRỰC TIẾP" : connected === false ? "○ MẤT KẾT NỐI" : "○ ĐANG CHỜ"}</span><button type="button" onClick={toggleFullscreen} aria-label="Bật hoặc tắt toàn màn hình camera" title="Toàn màn hình camera" className="camera-icon-button"><Maximize size={15}/></button><div className="camera-dock-actions" role="group" aria-label="Điều khiển camera thu nhỏ"><button type="button" onClick={onMoveDock} aria-label={dockSide === "right" ? "Chuyển camera thu nhỏ sang trái" : "Chuyển camera thu nhỏ sang phải"} title="Đổi bên hiển thị"><ArrowLeftRight size={17}/></button><button type="button" onClick={onReturnToCamera} aria-label="Quay lại camera lớn" title="Xem camera lớn"><ArrowUpLeft size={18}/></button><button type="button" onClick={onStop} aria-label="Dừng khẩn từ camera thu nhỏ" title="Dừng robot ngay"><CircleStop size={20}/></button></div></div>
     </div>
     <div className="camera-viewport camera-grid">
       <video ref={videoRef} autoPlay playsInline muted aria-label="Hình ảnh trực tiếp từ camera robot" className="h-full w-full object-contain"/>
@@ -72,6 +73,37 @@ export default function Page() {
     if (next.fresh && next.connected && (next.auto?.auto_running || next.auto_running)) setFrame(null);
   }, []);
   const registerMechanicalStop = useCallback((fn: (() => void) | null) => {mechanicalStopRef.current = fn;}, []);
+  // Keep one LiveKit <video> mounted; move the existing card with CSS when the camera leaves view.
+  const cameraSlotRef = useRef<HTMLDivElement | null>(null);
+  const [cameraDocked, setCameraDocked] = useState(false);
+  const [dockSide, setDockSide] = useState<"left" | "right">("right");
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    let raf = 0;
+    const mobilePortrait = window.matchMedia("(max-width: 639px) and (orientation: portrait)");
+    const sync = () => {
+      const rect = cameraSlotRef.current?.getBoundingClientRect();
+      setCameraDocked(Boolean(rect && mobilePortrait.matches && rect.bottom <= 60));
+    };
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => { raf = 0; sync(); });
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    sync();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
+  const returnToCamera = () => {
+    cameraSlotRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  };
+  const jumpToControls = () => {
+    document.getElementById("mechanical-control")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  };
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [livekitConnected, setLivekitConnected] = useState<boolean | null>(null);
   const [trackOnline, setTrackOnline] = useState(false);
@@ -147,7 +179,7 @@ export default function Page() {
     <p className="eco-stage-label">TRẠM ĐIỀU KHIỂN &nbsp; • &nbsp; THEO THỜI GIAN THỰC</p>
     <div className="operator-workspace">
       <section className="vision-column" aria-label="Camera và trạng thái robot">
-        <Cam videoRef={videoRef} frame={frame} connected={livekitConnected} trackOnline={trackOnline} gift={fresh?robot?.gift:undefined} giftAllowed={giftAllowed} giftPending={giftClickPending} giftError={giftError} onGift={()=>void dispenseGift()} onStop={stop} onReconnect={() => setCameraSession(session => session + 1)}/>
+        <div className="camera-slot" ref={cameraSlotRef} data-camera-slot="true"><Cam videoRef={videoRef} frame={frame} connected={livekitConnected} trackOnline={trackOnline} gift={fresh?robot?.gift:undefined} giftAllowed={giftAllowed} giftPending={giftClickPending} giftError={giftError} onGift={()=>void dispenseGift()} onStop={stop} onReconnect={() => setCameraSession(session => session + 1)} docked={cameraDocked} dockSide={dockSide} onMoveDock={() => setDockSide(side => side === "right" ? "left" : "right")} onReturnToCamera={returnToCamera} onJumpToControls={jumpToControls}/></div>
         <div className="vision-telemetry">
           <div><span className="telemetry-label">MỤC TIÊU</span><strong className="truncate">{target || "Chưa xác nhận"}</strong></div>
           <div><span className="telemetry-label">KHOẢNG CÁCH</span><strong className={distanceReady ? "text-emerald-700" : ""}>{distance != null ? `${(distance / 10).toFixed(1)} cm` : "—"}{distanceReady ? " ✓" : ""}</strong></div>
