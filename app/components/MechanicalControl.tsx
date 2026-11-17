@@ -657,7 +657,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           <p className="mt-2 text-[10px] text-slate-500">{autoState?.held_bin ? `Ngăn thả đã lưu: BIN ${autoState.held_bin}. ` : "Dùng ngăn bạn đang chọn trong Thùng & nắp. "}VL53 {((autoState?.sensor_min_mm ?? 200)/10).toFixed(0)}–{((autoState?.sensor_max_mm ?? 250)/10).toFixed(0)} cm, 3 mẫu mới; D19 xác nhận mới đóng kẹp.</p>
         </div>
         {autoMode && <button className={`${button} mt-2 w-full`} disabled={!operatorReady || mechanicsOn || pending || autoState?.assist_running || !autoState?.target_fresh || hardware.joints?.d3 !== robot?.config.grip.open} onClick={() => runOperator("GRASP")}>Gắp và nâng vật</button>}
-        <div className="mt-3 divide-y divide-slate-100">{JOINTS.map(j => {
+        <details className="control-details eco-advanced-details mt-3"><summary>Điều chỉnh xung servo &amp; tư thế nâng cao</summary><div className="mt-3 divide-y divide-slate-100">{JOINTS.map(j => {
           const [min, max] = robot?.config.limits[j.id] ?? [500, j.id === "p1" ? 3500 : 2500];
           const submit = () => { if (canMove) void mutate({joint: j.id, pulse_us: draftRef.current[j.id]}); };
           return <div key={j.id} className="joint-control">
@@ -677,7 +677,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
             draftRef.current = values; setDraft(values); setMessage("Đã nạp tư thế vào thanh kéo; chưa gửi tới Arduino.");
           }}>Nạp giá trị</button><button disabled={!canMove} onClick={() => void mutate({name: pose, values: {p1: draftRef.current.p1, p10: draftRef.current.p10, p11: draftRef.current.p11}}, "poses")} className={button}><Save size={13}/>Lưu</button></div></div>}
           <p className="mt-3 text-[11px] text-slate-500">Xung đã nhận không phải góc đo thực tế. Khớp nối và càng kẹp điều khiển qua tư thế và nút riêng.</p>
-        </details>
+        </details></details>
       </div>
       <div role="tabpanel" id="control-panel-drive" aria-labelledby="control-tab-drive" hidden={tab !== "drive"} tabIndex={0}>
         <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="control-section-title"><Radio size={16}/>Di chuyển Mecanum</h3><p className="mt-1 text-xs text-slate-500">Giữ để chạy · thả sẽ nhích thêm 540 ms</p></div><label className="flex items-center gap-2 text-xs text-slate-500">PWM<input aria-label="PWM bánh xe" type="number" min={1} max={255} value={speed} disabled={Boolean(driveHeld)} onChange={e => {const n = Number(e.target.value); if (Number.isInteger(n) && n >= 1 && n <= 255) setSpeed(n);}} className="w-16 rounded-lg border border-slate-200 px-2 py-2 text-center font-bold text-emerald-700"/></label></div>
