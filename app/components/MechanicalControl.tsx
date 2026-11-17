@@ -638,7 +638,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           if (event.key === "Home") next = 0;
           if (event.key === "End") next = CONTROL_TABS.length - 1;
           if (next !== undefined) { event.preventDefault(); const id = CONTROL_TABS[next].id; selectTab(id); document.getElementById(`control-tab-${id}`)?.focus(); }
-        }} className={tab === item.id ? "is-selected" : ""}>{item.title}</button>)}
+        }} className={tab === item.id ? "is-selected" : ""} aria-label={item.title}><span className="eco-tab-long">{item.title}</span><span className="eco-tab-short" aria-hidden="true">{item.id === "bin" ? "Thùng" : item.id === "auto" ? "AUTO" : item.title}</span></button>)}
     </div>
     <div ref={controlsScrollRef} className="controls-scroll" aria-label="Nội dung bảng điều khiển">
       <div role="tabpanel" id="control-panel-arm" aria-labelledby="control-tab-arm" hidden={tab !== "arm"} tabIndex={0}>
