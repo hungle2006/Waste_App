@@ -1,0 +1,40 @@
+name: Eco UI browser visual QA
+on:
+  push:
+    branches: [design/eco-final-20261117]
+  pull_request:
+    branches: [main]
+jobs:
+  browser-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install
+        run: |
+          npm ci
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Start Next.js
+        run: |
+          npm run start -- -p 3000 > /tmp/waste-next.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000 > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/waste-next.log
+          exit 1
+      - name: Visual layout Figma geometry and interactions
+        run: node scripts/eco-visual-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eco-browser-screenshots
+          path: artifacts/eco-ui
+          if-no-files-found: ignore

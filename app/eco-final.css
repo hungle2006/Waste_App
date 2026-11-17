@@ -1,0 +1,337 @@
+/* FINAL ECO • Figma source of truth: file 1aqIr1YZkFCVIjcDV6pHvM frames 5:2 / 5:147.
+   Presentation only: no changes to hardware command protocol, retry, STOP, ACK or drive release. */
+:root{--eco-bg:#f4f7f1;--eco-white:#fff;--eco-forest:#0e3026;--eco-deep:#071f1a;--eco-green:#27b77c;--eco-lime:#c8f06a;--eco-mint:#dff4e5;--eco-text:#18382c;--eco-muted:#788e83;--eco-line:#e1e9e0;--eco-soft:#f8fbf7;--eco-red:#e4494d}
+html,body{background:var(--eco-bg)!important;color:var(--eco-text)}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
+.eco-shell{max-width:1440px!important;width:100%;height:auto!important;max-height:none;min-height:100dvh;overflow:visible!important;display:block!important;margin:0 auto;padding:20px 24px 26px!important;background:var(--eco-bg);position:relative}
+.eco-shell *{box-sizing:border-box}
+.eco-shell button{cursor:pointer;touch-action:manipulation}
+.eco-shell button:disabled{cursor:not-allowed}
+.eco-shell button:focus-visible,.eco-shell input:focus-visible,.eco-shell select:focus-visible,.eco-shell summary:focus-visible{outline:3px solid var(--eco-green)!important;outline-offset:3px}
+.eco-shell .btn,.eco-shell .tool-button,.eco-shell .gift-dispense,.eco-shell .gift-stop,.eco-shell .emergency-button,.eco-shell .control-tabs button,.eco-shell .mode-switch button{transition:transform .19s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease,background-color .22s ease,border-color .22s ease,color .2s ease}
+.eco-shell button:disabled{opacity:.46}
+@media(hover:hover){.eco-shell button:not(:disabled):hover{transform:translateY(-1px)}.eco-shell button:not(:disabled):active{transform:translateY(0) scale(.975)}}
+.eco-shell .operator-header{position:relative;display:grid!important;grid-template-columns:minmax(0,1fr) 140px 192px 229px;align-items:center;gap:16px;min-height:78px;height:78px;margin:0;padding:0 18px 0 17px;border:1px solid var(--eco-line);border-radius:20px;background:var(--eco-white);box-shadow:none}
+.eco-shell .operator-brand{display:flex;align-items:center;gap:11px}
+.eco-shell .brand-mark{display:block;flex:none;width:46px;height:46px;border-radius:13px;background:transparent;overflow:hidden}
+.eco-shell .brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.eco-shell .operator-brand h1{font-size:20px;line-height:1.25;letter-spacing:-.02em;color:var(--eco-text);font-weight:800;white-space:nowrap}
+.eco-shell .brand-subtitle{display:block!important;margin-top:4px;color:var(--eco-muted);font-size:10px;line-height:1.3;letter-spacing:.03em;font-weight:700;white-space:nowrap}
+.eco-shell .header-actions{display:contents!important}
+.eco-shell .header-connection{grid-column:2;grid-row:1;display:flex!important;justify-content:center;align-items:center;gap:6px;width:140px;height:32px;border-radius:100px;background:var(--eco-soft);color:var(--eco-muted);font-size:10px;line-height:1.25;font-weight:700;letter-spacing:.025em}
+.eco-shell .header-connection svg{width:13px;height:13px}
+.eco-shell .mode-switch{grid-column:3;grid-row:1;display:flex;align-items:center;gap:6px;width:192px;height:32px;padding:0;border:0;background:transparent;border-radius:0}
+.eco-shell .mode-switch button{height:32px;min-height:32px;border-radius:100px;min-width:0;flex:1;background:var(--eco-soft);color:var(--eco-muted);padding:0 12px;font-size:10px;font-weight:700;letter-spacing:.03em}
+.eco-shell .mode-switch button[aria-pressed="true"]{background:var(--eco-mint);color:var(--eco-forest);box-shadow:none}
+.eco-shell .mode-switch button[aria-pressed="true"]::before{content:"● ";color:var(--eco-forest)}
+.eco-shell .emergency-button{grid-column:4;grid-row:1;min-height:46px;height:46px;width:229px;background:var(--eco-red);box-shadow:none;justify-content:center;border-radius:11px;color:#fff;font-size:12px;font-weight:750;letter-spacing:.025em}
+.eco-shell .emergency-button svg{width:16px;height:16px}
+.eco-shell .emergency-button:hover{background:#d13b40;box-shadow:0 7px 16px #e4494d2b}
+.eco-shell .emergency-short{display:none}
+.eco-shell .emergency-label{display:inline}
+.eco-hero{position:relative;margin-top:16px;height:168px;border-radius:21px;overflow:hidden;background:var(--eco-forest);color:#fff}
+.eco-eyebrow{position:absolute;top:18px;left:25px;display:flex;align-items:center;height:32px;padding:0 13px;background:#22533b;color:var(--eco-lime);font-size:10px;font-weight:750;letter-spacing:.04em;border-radius:100px}
+.eco-hero h2{position:absolute;top:59px;left:28px;margin:0;z-index:1;max-width:790px;color:#fff;font-size:31px;line-height:1.25;letter-spacing:-.033em;font-weight:800}
+.eco-hero-description{position:absolute;left:28px;top:110px;margin:0;color:#c0d9cc;font-size:14px;line-height:1.5}
+.eco-hero-footer{position:absolute;left:28px;top:142px;margin:0;color:var(--eco-lime);font-size:10px;letter-spacing:.03em;font-weight:800}
+.eco-hero-art{position:absolute;right:0;top:0;width:432px;height:168px;display:block;object-fit:fill;pointer-events:none}
+.eco-mobile-ring,.eco-mobile-leaf{display:none}
+.eco-stage-label{margin:14px 1px 18px;color:var(--eco-muted);font-size:10px;line-height:11px;font-weight:800;letter-spacing:.02em}
+.eco-shell .operator-workspace{display:grid!important;grid-template-columns:minmax(0,818fr) minmax(0,559fr);gap:16px!important;min-width:0;min-height:0;height:auto!important;overflow:visible!important;align-items:start}
+.eco-shell .vision-column{display:flex!important;flex-direction:column;gap:14px;min-width:0;min-height:0;height:auto!important;max-height:none;overflow:visible!important;position:static!important;border:0!important;border-radius:0;background:transparent;box-shadow:none!important}
+.eco-shell .camera-panel{display:flex;flex:none;height:505px;min-height:505px;max-height:none;overflow:hidden;border:1px solid var(--eco-line);border-radius:20px;background:var(--eco-white);color:var(--eco-text);box-shadow:none}
+.eco-shell .camera-heading{display:flex;flex:none;height:59px;min-height:59px;padding:0 20px;border:0;background:#fff;color:var(--eco-text);gap:7px}
+.eco-shell .camera-heading>div:first-child{gap:0}
+.eco-shell .camera-heading>div:first-child:before{content:"";width:9px;height:9px;flex:none;border-radius:50%;background:var(--eco-green);margin-right:9px}
+.eco-shell .camera-heading>div:first-child svg{display:none}
+.eco-shell .camera-heading h2{font-size:13px;line-height:1.3;color:var(--eco-text);font-weight:800;letter-spacing:-.015em}
+.eco-shell .camera-heading>div:last-child{gap:6px;white-space:nowrap}
+.eco-shell .camera-heading>div:last-child:before{content:"CAM 01 / LIVEKIT";font-size:10px;color:var(--eco-muted);font-weight:700;margin-right:6px}
+.eco-shell .camera-heading [role=status]{font-size:9px;color:var(--eco-muted);font-weight:700}
+.eco-shell .camera-heading .camera-icon-button{width:32px;height:32px;min-height:32px;color:var(--eco-forest);border:1px solid var(--eco-line);border-radius:8px}
+.eco-shell .camera-heading .camera-icon-button:hover{background:var(--eco-mint);color:var(--eco-forest)}
+.eco-shell .camera-viewport{position:relative;flex:1;min-height:0;overflow:hidden;margin:0 13px;border-radius:15px;background-color:var(--eco-deep);background-image:linear-gradient(#14372c9f 1px,transparent 1px),linear-gradient(90deg,#14372c9f 1px,transparent 1px);background-size:10% 16.667%;background-position:center}
+.eco-shell .camera-viewport:after{content:"";position:absolute;pointer-events:none;top:50%;left:50%;width:142px;height:142px;border:2px solid #285942;border-radius:50%;transform:translate(-50%,-50%);box-shadow:inset 0 0 0 23px var(--eco-deep),inset 0 0 0 25px #1b4937;opacity:.72}
+.eco-shell .camera-viewport:has(video[src]):after{display:none}
+.eco-shell .camera-viewport>video{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain}
+.eco-shell .camera-placeholder{z-index:3;color:#93b2a2;text-align:center;padding:16px}
+.eco-shell .camera-placeholder svg{width:32px;height:32px;color:var(--eco-green);stroke-width:1.4;display:block!important}
+.eco-shell .camera-placeholder p{color:#fff;font-weight:750;font-size:16px;line-height:1.4;margin-top:12px}
+.eco-shell .camera-placeholder button{min-height:32px;margin-top:8px;border:1px solid #36614a;background:#15392c;color:#aac6b5;font-size:10px;padding:0 12px;border-radius:100px}
+.eco-shell .camera-placeholder button:hover{background:#275341;color:#fff}
+.eco-shell .gift-bar{flex:none;display:flex!important;justify-content:space-between;align-items:center;height:43px;min-height:43px;max-height:43px;margin:12px 13px 12px;padding:3px 6px 3px 13px;border:0;background:var(--eco-forest);border-radius:10px;gap:8px}
+.eco-shell .gift-copy{min-width:0;max-width:calc(100% - 144px)}
+.eco-shell .gift-title{display:block!important;margin:0;color:#fff;font-size:11px;font-weight:750;letter-spacing:.015em;white-space:nowrap}
+.eco-shell .gift-feedback[data-active="false"]{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.eco-shell .gift-feedback[data-active="true"]{margin-top:1px;color:#d5f0df;font-size:10px}
+.eco-shell .gift-actions{display:flex;align-items:center;gap:7px;flex:none}
+.eco-shell .gift-stop{min-height:37px;width:37px;border:1px solid #ad5059;background:#542d33;color:#ffe5e5;border-radius:9px;padding:0;display:flex;align-items:center;justify-content:center}
+.eco-shell .gift-stop svg{width:15px;height:15px}
+.eco-shell .gift-dispense{height:37px!important;min-height:37px!important;min-width:108px;justify-content:center;padding:0 13px;border-radius:10px;background:var(--eco-green);color:var(--eco-deep);font-size:12px;font-weight:750}
+.eco-shell .gift-dispense:hover{background:#45d69b}
+.eco-shell .gift-dispense svg{display:none}
+.eco-shell .vision-telemetry{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0!important;background:transparent;flex:none}
+.eco-shell .vision-telemetry>div{display:flex;flex-direction:column;gap:0;justify-content:initial;position:relative;min-width:0;height:90px;max-height:90px;padding:17px 14px!important;border:1px solid var(--eco-line)!important;border-radius:20px;background:#fff}
+.eco-shell .telemetry-label{display:flex;align-items:center;gap:8px;color:var(--eco-muted);font-size:10px;font-weight:700;white-space:nowrap;letter-spacing:0}
+.eco-shell .telemetry-label:before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--eco-green)}
+.eco-shell .vision-telemetry strong{margin-top:20px;min-width:0;max-width:100%;font-size:16px;line-height:1.15;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--eco-text)}
+.eco-shell .recognition-panel{display:block;flex:none;min-height:219px;height:auto;padding:18px 16px 20px;border:1px solid var(--eco-line);border-radius:20px;background:#fff;overflow:visible}
+.eco-shell .recognition-heading{gap:10px;align-items:flex-start;position:relative}
+.eco-shell .recognition-heading h2{font-size:19px;line-height:1.25;font-weight:800;color:var(--eco-text);letter-spacing:-.02em}
+.eco-shell .recognition-heading h2 svg{height:19px;width:19px;color:var(--eco-forest)}
+.eco-shell .recognition-heading p{margin-top:9px;color:var(--eco-muted);font-size:11px}
+.eco-shell .recognition-actions{gap:5px}
+.eco-shell .recognition-actions button{min-height:36px;border-radius:10px;border-color:var(--eco-line);color:var(--eco-forest);background:var(--eco-soft);font-weight:700}
+.eco-shell .recognition-objects{color:var(--eco-muted);margin-top:7px;max-height:34px;font-size:11px}
+.eco-shell .recognition-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:16px}
+.eco-shell .recognition-counts>div{position:relative;min-height:91px;display:flex;flex-direction:column;align-items:flex-start;justify-content:initial;gap:0;padding:16px 13px;border:0;border-radius:11px;background:var(--eco-soft);min-width:0}
+.eco-shell .recognition-counts>div i{width:9px;height:9px;position:absolute;top:19px;left:13px}
+.eco-shell .recognition-counts>div span{margin-left:16px;color:var(--eco-muted);font-size:11px;font-weight:700;white-space:nowrap}
+.eco-shell .recognition-counts>div strong{margin-top:20px;color:var(--eco-text);font-size:17px}
+.eco-shell .recognition-sync{margin-top:7px;font-size:10px;color:var(--eco-muted)}
+.eco-shell .vision-summary{display:none}
+.eco-shell .control-panel{position:relative;display:flex!important;flex-direction:column;gap:0;width:100%;min-height:848px;height:auto!important;max-height:none;overflow:visible!important;border:1px solid var(--eco-line);border-radius:20px;background:#fff;box-shadow:none}
+.eco-shell .control-toolbar{order:0;display:grid!important;grid-template-columns:1fr;gap:0;flex:none;padding:20px 18px 0;min-height:138px}
+.eco-shell .control-toolbar>div:first-child{grid-row:1;align-self:start;display:flex;align-items:center;gap:12px;min-width:0}
+.eco-shell .control-toolbar>div:first-child>svg{display:block!important;width:34px;height:34px;padding:8px;background:var(--eco-mint);color:var(--eco-forest);border-radius:11px}
+.eco-shell .control-toolbar h2{color:var(--eco-text);font-size:20px;font-weight:800;line-height:1.25;letter-spacing:-.025em}
+.eco-shell .control-toolbar p{margin-top:4px;color:var(--eco-muted);font-size:11px}
+.eco-shell .control-toolbar>div:last-child{grid-row:2;display:grid;grid-template-columns:minmax(0,1fr) 67px 75px;gap:9px;align-self:end;min-width:0;flex:none;margin-top:18px}
+.eco-shell .tool-button{min-height:46px;border:1px solid var(--eco-line);border-radius:11px;background:var(--eco-soft);color:var(--eco-text);box-shadow:none;padding:0 12px;font-size:12px;font-weight:700}
+.eco-shell .tool-button:hover{background:var(--eco-mint);border-color:#afd7bd}
+.eco-shell .control-toolbar .tool-button.connect-button{background:var(--eco-green);color:var(--eco-forest);border:0;justify-content:flex-start;font-size:12px;font-weight:800}
+.eco-shell .control-toolbar .tool-button.connect-button svg{display:none}
+.eco-shell .control-toolbar .tool-button:last-child{background:#fef0ee!important;color:var(--eco-red)!important;border:0!important}
+.eco-shell .control-toolbar .tool-button:last-child svg{height:17px;width:17px}
+.eco-shell .control-toolbar .tool-button:nth-child(2){font-size:16px}
+.eco-shell .connect-short{display:none!important}
+.eco-shell .connect-label{display:inline!important}
+.eco-shell .mechanical-safety-note{order:1;display:flex;flex:none;flex-direction:column;gap:6px;min-height:52px;margin:6px 18px 0;padding:9px 14px;border:1px solid var(--eco-line);border-radius:11px;background:var(--eco-soft)}
+.eco-shell .mechanical-safety-note strong{color:var(--eco-muted);font-size:10px;font-weight:800}
+.eco-shell .mechanical-safety-note span{color:var(--eco-text);font-size:11px}
+.eco-shell .terminal-panel{order:2;flex:none;margin:14px 18px 0!important;border:0!important;border-radius:12px;background:var(--eco-deep)!important;overflow:hidden}
+.eco-shell .terminal-panel>div:first-child{min-height:70px;border-bottom-color:#20473a;padding:13px 14px}
+.eco-shell .terminal-panel button{font-weight:750}
+.eco-shell .terminal-panel button[aria-expanded=false]{width:100%;align-items:flex-start;flex-direction:column;gap:6px}
+.eco-shell .terminal-panel button[aria-expanded=false] svg:last-child{position:absolute;right:20px;top:18px}
+.eco-shell .terminal-panel button[aria-expanded=false] span{font-size:11px;font-weight:500}
+.eco-shell .control-tabs{position:relative!important;order:3;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:none;border:0;background:transparent;box-shadow:none;padding:24px 0 0!important;margin:19px 18px 0;gap:6px}
+.eco-shell .control-tabs::before{content:"BỘ ĐIỀU KHIỂN";position:absolute;left:0;top:0;color:var(--eco-muted);font-size:10px;font-weight:800}
+.eco-shell .control-tabs button{min-height:43px;height:43px;border-radius:10px;padding:0 7px;background:var(--eco-soft);color:var(--eco-muted);font-size:11px;font-weight:700;white-space:nowrap}
+.eco-shell .control-tabs button.is-selected{background:var(--eco-forest);color:#fff;box-shadow:none}
+.eco-shell .control-tabs button:not(.is-selected):hover{background:var(--eco-mint);color:var(--eco-forest)}
+.eco-shell .controls-scroll{order:4;flex:none;display:block!important;height:auto!important;min-height:0;max-height:none;overflow:visible!important;padding:23px 18px 26px}
+.eco-shell .eco-gripper-heading{display:flex;align-items:center;min-height:59px;padding:14px 13px 4px;margin:0!important;border:1px solid var(--eco-line);border-bottom:0;border-radius:13px 13px 0 0;background:var(--eco-soft)}
+.eco-shell .eco-gripper-heading .control-section-title{font-size:15px;color:var(--eco-text)}
+.eco-shell .eco-gripper-heading .control-section-title svg{display:none}
+.eco-shell .eco-gripper-heading>span{font-size:10px;color:var(--eco-muted)}
+.eco-shell .eco-gripper-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));padding:11px 12px 14px;gap:9px;border:1px solid var(--eco-line);border-top:0;border-radius:0 0 13px 13px;background:var(--eco-soft)}
+.eco-shell .eco-gripper-actions button{background:#fff!important;color:var(--eco-text)!important;border:1px solid var(--eco-line)!important;border-radius:10px;min-height:42px;font-size:12px}
+.eco-shell .eco-wrist-card{margin-top:16px!important;padding:15px 13px!important;border:1px solid var(--eco-line)!important;border-radius:13px;background:var(--eco-soft)!important}
+.eco-shell .eco-wrist-card h3{color:var(--eco-muted);font-size:11px;font-weight:800}
+.eco-shell .eco-wrist-card output{padding:7px 12px;border-radius:100px;background:var(--eco-mint);font-size:11px;color:var(--eco-forest)}
+.eco-shell .eco-wrist-card .grid{gap:9px}
+.eco-shell .eco-wrist-card .grid button{min-height:43px;border:1px solid var(--eco-line);border-radius:10px;background:#fff;color:var(--eco-text);font-size:11px;white-space:nowrap}
+.eco-shell .eco-sensor-card{margin-top:26px!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important}
+.eco-shell .eco-sensor-card::before{content:"CẢM BIẾN & AN TOÀN";display:block;margin-bottom:11px;color:var(--eco-muted);font-size:10px;font-weight:800}
+.eco-shell .eco-sensor-card>div:first-child{margin-bottom:8px}
+.eco-shell .eco-sensor-card .eco-grasp-action button{width:100%;min-height:45px;border-radius:10px;background:var(--eco-forest)!important;color:#fff!important;border:0!important;font-size:12px;font-weight:700}
+.eco-shell .eco-follow-up-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.eco-shell .eco-follow-up-actions button{width:100%;min-height:43px;margin:0!important;border:1px solid var(--eco-line);border-radius:10px;background:var(--eco-soft);color:var(--eco-text);font-size:11px}
+.eco-shell .joint-control{padding:14px 0;border-color:var(--eco-line)}
+.eco-shell .joint-control input[type=range]{accent-color:var(--eco-green)}
+.eco-shell .control-details{border-color:var(--eco-line);background:var(--eco-soft);border-radius:13px}
+.eco-shell .control-hold-bar{order:5;flex:none;margin:0 18px 8px;padding:10px!important;border-radius:12px;background:var(--eco-soft)}
+.eco-shell .control-message{order:6;flex:none;margin:0 18px 8px;padding:10px!important;max-height:none!important;color:var(--eco-muted);font-size:11px;border-radius:10px;background:var(--eco-soft)}
+.eco-shell .manual-status{order:7;flex:none;margin:0 18px 8px!important;font-size:11px}
+.eco-shell .debug-toolbar{order:8;flex:none;margin:0 18px 16px;padding:10px!important;border-radius:12px;background:var(--eco-soft)}
+.eco-shell .debug-toolbar p{font-size:11px}
+.eco-shell .auto-toolbar{order:3;flex:none;margin:8px 18px;padding:0!important}
+.eco-shell [role=tabpanel][hidden]{display:none!important}
+.eco-shell .drive-pad button{border-radius:12px}
+.eco-shell input[type=number],.eco-shell select{border-radius:9px}
+.eco-shell [role=log]{scrollbar-width:thin;scrollbar-color:#426858 transparent}
+@media(min-width:960px){
+ .eco-shell .operator-workspace{grid-template-rows:auto}
+ .eco-shell .control-panel{align-self:stretch}
+ .eco-shell .camera-panel{position:relative!important;top:auto;height:505px}
+}
+@media(max-width:959px){
+ .eco-shell{padding:0 12px 24px!important;max-width:640px}
+ .eco-shell .operator-header{display:flex!important;position:relative;z-index:50;width:calc(100% + 24px);margin-left:-12px;height:73px;min-height:73px;padding:0 14px 0 12px;border:0;border-radius:0;justify-content:space-between;box-shadow:none}
+ .eco-shell .brand-mark{display:block;width:43px;height:43px}
+ .eco-shell .operator-brand{flex:1;min-width:0;gap:9px}
+ .eco-shell .operator-brand h1{font-size:16px}
+ .eco-shell .brand-subtitle{font-size:10px}
+ .eco-shell .emergency-button{display:flex;position:absolute;right:14px;top:14px;width:108px;height:44px;min-height:44px;padding:0 6px;border-radius:11px;font-size:12px}
+ .eco-shell .emergency-button svg{display:none}
+ .eco-shell .emergency-short{display:inline!important}
+ .eco-shell .emergency-label{display:none!important}
+ .eco-shell .mode-switch{position:absolute;z-index:60;top:219px;left:12px;width:calc(100vw - 156px);max-width:246px;gap:7px;height:32px;background:transparent;border:0;padding:0!important}
+ .eco-shell .mode-switch button{height:32px;min-height:32px;border-radius:100px;font-size:10px;padding:0 10px;flex:1 1 auto}
+ .eco-shell .mode-switch button:first-child{flex:1 1 60%;min-width:126px}
+ .eco-shell .mode-switch button:last-child{flex:0 1 87px;min-width:77px}
+ .eco-shell .header-connection{position:absolute;z-index:60;top:219px;right:12px;width:112px;max-width:112px;height:32px;display:flex!important;font-size:9px;padding:0 8px;border-radius:100px}
+ .eco-shell .header-connection svg{display:none}
+ .eco-hero{height:122px;margin-top:12px;border-radius:18px}
+ .eco-eyebrow{top:11px;left:13px;height:32px;padding:0 12px;font-size:10px}
+ .eco-hero h2{top:54px;left:14px;max-width:245px;font-size:19px;line-height:1.26;letter-spacing:-.02em}
+ .eco-hero-description,.eco-hero-footer,.eco-hero-art{display:none}
+ .eco-mobile-ring{display:block;position:absolute;top:-22px;right:-51px;width:121px;height:121px;pointer-events:none}
+ .eco-mobile-leaf{display:block;position:absolute;top:24px;right:32px;width:76px;height:83px;pointer-events:none}
+ .eco-stage-label{display:none}
+ .eco-shell .operator-workspace{display:flex!important;flex-direction:column;gap:14px!important;margin-top:56px;grid-template-columns:none;overflow:visible!important}
+ .eco-shell .vision-column{gap:13px;position:static!important;height:auto!important;min-height:0;max-height:none;overflow:visible!important;box-shadow:none!important}
+ .eco-shell .camera-panel{position:relative!important;top:auto!important;height:378px;min-height:378px;max-height:378px;border-radius:20px}
+ .eco-shell .camera-heading{height:59px;min-height:59px;padding:0 13px}
+ .eco-shell .camera-heading h2{font-size:13px}
+ .eco-shell .camera-heading>div:last-child:before{display:none}
+ .eco-shell .camera-heading>div:last-child span{font-size:9px}
+ .eco-shell .camera-heading .camera-icon-button{width:27px;height:27px;min-height:27px;border:0}
+ .eco-shell .camera-viewport{margin:0 13px;border-radius:15px}
+ .eco-shell .camera-viewport:after{width:142px;height:142px}
+ .eco-shell .camera-placeholder p{font-size:14px}
+ .eco-shell .camera-placeholder button{font-size:10px}
+ .eco-shell .gift-bar{height:43px;min-height:43px;max-height:43px;margin:12px 13px 12px;padding:3px 5px 3px 13px;gap:5px}
+ .eco-shell .gift-title{font-size:10px}
+ .eco-shell .gift-copy{max-width:calc(100% - 150px)}
+ .eco-shell .gift-dispense{min-width:108px;max-width:108px;font-size:11px}
+ .eco-shell .gift-stop{width:32px;min-width:32px}
+ .eco-shell .vision-telemetry{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .eco-shell .vision-telemetry>div{height:90px;min-height:90px;padding:17px 13px!important;border-radius:20px}
+ .eco-shell .telemetry-label{font-size:10px;gap:7px}
+ .eco-shell .vision-telemetry strong{font-size:16px;margin-top:20px}
+ .eco-shell .recognition-panel{min-height:208px;padding:17px 13px 12px;border-radius:20px}
+ .eco-shell .recognition-heading h2{font-size:15px}
+ .eco-shell .recognition-heading p{font-size:10px;max-width:290px}
+ .eco-shell .recognition-heading{display:block}
+ .eco-shell .recognition-actions{position:relative;justify-content:flex-end;margin-top:6px}
+ .eco-shell .recognition-actions button{min-height:28px;font-size:10px}
+ .eco-shell .recognition-objects{margin-top:6px}
+ .eco-shell .recognition-counts{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}
+ .eco-shell .recognition-counts>div{min-height:52px;padding:10px 12px;border-radius:11px}
+ .eco-shell .recognition-counts>div i{top:13px;left:12px}
+ .eco-shell .recognition-counts>div span{font-size:10px}
+ .eco-shell .recognition-counts>div strong{font-size:15px;margin-top:6px;margin-left:16px}
+ .eco-shell .recognition-sync{font-size:10px}
+ .eco-shell .control-panel{width:100%;min-height:682px;border-radius:20px;overflow:visible!important}
+ .eco-shell .control-toolbar{min-height:134px;padding:17px 16px 0}
+ .eco-shell .control-toolbar>div:first-child>svg{display:block!important;width:34px;height:34px}
+ .eco-shell .control-toolbar h2{font-size:17px}
+ .eco-shell .control-toolbar p{font-size:11px}
+ .eco-shell .control-toolbar>div:last-child{grid-template-columns:minmax(0,1fr) 78px;margin-top:17px;gap:9px}
+ .eco-shell .control-toolbar .tool-button:nth-child(2){display:none}
+ .eco-shell .control-toolbar .tool-button{min-height:45px}
+ .eco-shell .control-toolbar .tool-button.connect-button{font-size:12px}
+ .eco-shell .mechanical-safety-note{display:none}
+ .eco-shell .terminal-panel{margin:10px 16px 0!important;border-radius:12px}
+ .eco-shell .terminal-panel>div:first-child{min-height:65px}
+ .eco-shell .control-tabs{position:relative!important;top:auto!important;margin:16px 16px 0;padding:17px 0 0!important;gap:6px}
+ .eco-shell .control-tabs button{height:43px;min-height:43px;font-size:10px;padding:0 4px}
+ .eco-shell .control-tabs::before{top:0;font-size:9px}
+ .eco-shell .controls-scroll{padding:17px 16px 18px;overflow:visible!important}
+ .eco-shell .eco-gripper-heading{min-height:53px;padding:11px 12px 2px}
+ .eco-shell .eco-gripper-heading>span{font-size:9px}
+ .eco-shell .eco-gripper-actions{padding:7px 12px 13px;gap:9px}
+ .eco-shell .eco-gripper-actions button{height:42px;min-height:42px;font-size:11px}
+ .eco-shell .eco-wrist-card{margin-top:15px!important;padding:12px!important}
+ .eco-shell .eco-wrist-card .grid button{min-height:40px;font-size:10px;gap:0;padding:0 2px}
+ .eco-shell .eco-wrist-card .grid button svg{height:12px;width:12px}
+ .eco-shell .eco-wrist-card output{font-size:10px}
+ .eco-shell .eco-sensor-card{margin-top:24px!important}
+ .eco-shell .eco-sensor-card .eco-grasp-action button{height:43px;min-height:43px}
+ .eco-shell .eco-follow-up-actions button{min-height:40px}
+ .eco-shell .control-hold-bar{margin:0 16px 8px}
+ .eco-shell .control-message{margin:0 16px 8px}
+ .eco-shell .debug-toolbar{margin:0 16px 16px}
+ .eco-shell .control-panel button{font-size:12px}
+}
+@media(max-width:375px){
+ .eco-shell .brand-mark{height:39px;width:39px}
+ .eco-shell .operator-brand h1{font-size:14px}
+ .eco-shell .brand-subtitle{font-size:9px}
+ .eco-shell .mode-switch{width:calc(100vw - 142px)}
+ .eco-shell .mode-switch button:first-child{min-width:114px}
+ .eco-shell .mode-switch button:last-child{min-width:64px}
+ .eco-shell .header-connection{width:104px;font-size:9px}
+ .eco-shell .gift-title{font-size:9px}
+ .eco-shell .gift-dispense{min-width:94px;max-width:94px}
+ .eco-shell .camera-heading [role=status]{font-size:8px}
+ .eco-shell .camera-heading h2{font-size:12px}
+}
+@media(min-width:640px) and (max-width:959px){
+ .eco-shell{max-width:920px;padding:16px!important}
+ .eco-shell .operator-header{width:100%;margin:0;border:1px solid var(--eco-line);border-radius:20px}
+ .eco-shell .mode-switch{top:244px;left:16px}
+ .eco-shell .header-connection{top:244px;right:16px}
+ .eco-hero{height:148px}
+ .eco-hero h2{font-size:25px;max-width:70%}
+ .eco-shell .operator-workspace{margin-top:60px;display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px!important}
+ .eco-shell .camera-panel{height:460px;min-height:460px;max-height:460px}
+ .eco-shell .vision-telemetry{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .eco-shell .control-panel{min-width:0}
+ .eco-shell .control-toolbar>div:last-child{grid-template-columns:minmax(0,1fr) 65px}
+ .eco-shell .eco-wrist-card .grid button{font-size:9px}
+}
+@media(max-width:959px) and (orientation:landscape) and (max-height:500px){
+ .eco-shell{height:auto!important;overflow:visible!important}
+ .eco-shell .operator-header{position:relative}
+ .eco-shell .vision-column{position:static!important}
+ .eco-shell .control-panel{overflow:visible!important}
+ .eco-shell .controls-scroll{overflow:visible!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .eco-shell *,.eco-shell *:before,.eco-shell *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+
+/* Pixel-diff corrections from Chromium visual QA (390px: camera 332→366). */
+@media(max-width:959px){
+  .eco-shell .operator-workspace{align-items:stretch!important}
+  .eco-shell .vision-column{width:100%!important;align-self:stretch!important}
+  .eco-shell .camera-panel,.eco-shell .recognition-panel{width:100%!important;min-width:0}
+}
+@media(max-width:639px){
+  .eco-shell .recognition-panel{height:208px!important;min-height:208px!important;overflow:hidden}
+  .eco-shell .recognition-heading{position:relative;min-height:53px}
+  .eco-shell .recognition-heading h2{max-width:260px;margin:0}
+  .eco-shell .recognition-heading p{max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:11px}
+  .eco-shell .recognition-actions{position:absolute;right:0;top:-7px;margin:0;gap:4px}
+  .eco-shell .recognition-actions button{width:30px;height:30px;min-height:30px;padding:0}
+  .eco-shell .recognition-actions button span{display:none}
+  .eco-shell .recognition-objects[data-empty="true"],
+  .eco-shell .recognition-sync[data-has-error="false"]{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+  .eco-shell .recognition-objects[data-empty="false"]{margin-top:4px;max-height:26px}
+  .eco-shell .recognition-counts{margin-top:10px}
+}
+
+
+/* Advanced mechanical setup is discoverable but folded until requested. */
+.eco-shell .eco-advanced-details{margin-top:14px!important;padding:0;border-radius:12px;border:1px solid var(--eco-line);background:var(--eco-soft)}
+.eco-shell .eco-advanced-details>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;padding:10px 13px;font-size:11px;font-weight:750;color:var(--eco-text)}
+.eco-shell .eco-advanced-details[open]>summary{border-bottom:1px solid var(--eco-line)}
+.eco-shell .eco-advanced-details>div{padding:0 12px 12px}
+@media(max-width:639px){
+ .eco-shell .recognition-actions button{height:44px;min-height:44px;width:44px;position:relative;top:-7px}
+ .eco-shell .recognition-panel:has(.recognition-objects[data-empty="false"]),
+ .eco-shell .recognition-panel:has(.recognition-sync[data-has-error="true"]){height:auto!important;min-height:208px!important;overflow:visible!important}
+}
+
+
+.eco-shell .eco-tab-short{display:none}
+@media(max-width:639px){
+ .eco-shell .eco-tab-long{display:none}
+ .eco-shell .eco-tab-short{display:inline}
+}
+
+
+/* Collapsed terminal: exact Figma two-line status, no artificial scroll height. */
+.eco-shell .terminal-panel button[aria-expanded="false"]{
+  display:grid!important;position:relative;width:100%;height:50px;min-height:50px;
+  grid-template-columns:17px minmax(0,1fr) 20px;grid-template-rows:19px 18px;
+  align-content:center;align-items:center;column-gap:8px;row-gap:0;
+  padding:0!important;line-height:1.1
+}
+.eco-shell .terminal-panel button[aria-expanded="false"]>svg:first-child{grid-column:1;grid-row:1;position:static!important}
+.eco-shell .terminal-panel button[aria-expanded="false"]>.terminal-heading-text{grid-column:2;grid-row:1;font-size:12px;font-weight:750;white-space:nowrap}
+.eco-shell .terminal-panel button[aria-expanded="false"]>span:not(.terminal-heading-text){grid-column:2;grid-row:2;font-size:11px;white-space:nowrap}
+.eco-shell .terminal-panel button[aria-expanded="false"]>svg:last-child{grid-column:3;grid-row:1;position:static!important;justify-self:end}

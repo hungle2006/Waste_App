@@ -64,20 +64,20 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
 
   return <section className="recognition-panel" aria-label="Nhận diện rác">
     <div className="recognition-heading">
-      <div><h2><Focus size={15}/>Nhận diện rác</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả từ robot"}</p></div>
+      <div><h2><Focus size={15}/>Nhận diện rác bằng AI</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả mới nhất từ robot hoặc khung ảnh đã phân tích"}</p></div>
       <div className="recognition-actions">
-        {frame && <button type="button" onClick={() => onFrame(null)} title="Trở lại camera trực tiếp"><Video size={14}/><span>Trực tiếp</span></button>}
-        <button type="button" disabled={!trackOnline || busy || autoActive} onClick={() => void capture()}
+        {frame && <button type="button" aria-label="Trực tiếp" onClick={() => onFrame(null)} title="Trở lại camera trực tiếp"><Video size={14}/><span>Trực tiếp</span></button>}
+        <button type="button" aria-label={busy ? "Đang phân tích…" : "Phân tích ảnh"} disabled={!trackOnline || busy || autoActive} onClick={() => void capture()}
           title={autoActive ? "AUTO đang nhận diện từ camera robot" : "Chụp và nhận diện một khung ảnh camera"}>
           {busy ? <LoaderCircle size={14} className="animate-spin"/> : <Focus size={14}/>}<span>{busy ? "Đang phân tích…" : "Phân tích ảnh"}</span>
         </button>
       </div>
     </div>
-    <div className="recognition-objects" aria-live="polite">{objects === null ? "Chưa có kết quả nhận diện mới" : objects.length === 0 ? "Không thấy rác trong khung ảnh" : objects.map((object, i) => <span key={i}>
+    <div className="recognition-objects" data-empty={objects === null} aria-live="polite">{objects === null ? "Chưa có kết quả nhận diện mới" : objects.length === 0 ? "Không thấy rác trong khung ảnh" : objects.map((object, i) => <span key={i}>
       <i style={{background: TRASH_TYPES.find(t => t.bin === object.bin)?.color}}/>{object.label}<small>{TRASH_TYPES.find(t => t.bin === object.bin)?.title}</small>
     </span>)}</div>
     <div className="recognition-counts">{TRASH_TYPES.map(t => <div key={t.field}><i style={{background: t.color}}/><span>{t.title}</span><strong>{counts ? counts[t.field] : "—"}</strong></div>)}</div>
-    <div className="recognition-sync" data-state={error ? "error" : "waiting"} role="status"><span>{error}</span><small>Số vật trong kết quả mới nhất</small></div>
+    <div className="recognition-sync" data-state={error ? "error" : "waiting"} data-has-error={Boolean(error)} role="status"><span>{error}</span><small>Số vật trong kết quả mới nhất</small></div>
   </section>;
 }
 
