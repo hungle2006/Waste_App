@@ -343,7 +343,8 @@ describe('Operator controls with robot ACK',()=>{
 
 describe('Persistent camera while controlling the robot',()=>{
  it('docks the existing LiveKit video, lets the operator move it, and keeps emergency STOP available',async()=>{
-  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({matches:true,media:'(max-width: 639px) and (orientation: portrait)'}));
+  let mobilePortrait=false;
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({get matches(){return mobilePortrait;},media:'(max-width: 639px) and (orientation: portrait)'}));
   render(<Page/>);
   const video=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot');
   const slot=video.closest('.camera-slot') as HTMLElement;
@@ -354,6 +355,7 @@ describe('Persistent camera while controlling the robot',()=>{
   Object.defineProperty(slot,'getBoundingClientRect',{configurable:true,value:()=>({bottom,top:bottom-378})});
   expect(panel.dataset.docked).toBe('false');
   bottom=40;
+  mobilePortrait=true;
   fireEvent.scroll(window);
   await waitFor(()=>expect(panel.dataset.docked).toBe('true'));
   expect(screen.getByLabelText('Hình ảnh trực tiếp từ camera robot')).toBe(video);
