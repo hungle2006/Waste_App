@@ -544,8 +544,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
         <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
       </div>
     </div>
+    <div className="mechanical-safety-note"><strong>✧ AN TOÀN VẬN HÀNH</strong><span>Chỉ điều khiển sau khi Jetson xác nhận</span></div>
     {voiceError && <p role="status" className="px-3 pb-2 text-[11px] text-amber-700">{voiceError}</p>}
-    <div className="flex items-center justify-between gap-2 px-3 pb-2">
+    <div className="debug-toolbar flex items-center justify-between gap-2 px-3 pb-2">
       <p className="min-w-0 text-[11px] text-slate-500">Kiểm tra xung servo phát quà D4 · không phát quà</p>
       <button type="button" aria-label="Test xung D4" onClick={() => void testD4()}
         disabled={!ready || pending || robot?.stopped || robot?.busy || moving ||
@@ -573,13 +574,13 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       <button className="tool-button !min-h-11" disabled={!operatorReady || pending || autoState?.auto_running || autoState?.assist_running} onClick={() => runOperator("AUTO START")}>Bắt đầu AUTO</button>
       <button type="button" aria-label="Dừng AUTO" title="Dừng AUTO" className="tool-button !min-h-11" disabled={!brokerOnline} onClick={() => void mutate({command:"STOP"},"command",true)}><Square size={14}/></button>
     </div>}
-    <p role="status" className="mx-3 my-2 text-[11px] text-slate-600">{manualStatus}{autoState?.d18_detected === true ? " · D18: ĐANG PHÁT HIỆN" : autoState?.d18_detected === false ? " · D18: Không phát hiện" : " · D18: Chưa có trạng thái"}</p>
+    <p role="status" className="manual-status mx-3 my-2 text-[11px] text-slate-600">{manualStatus}{autoState?.d18_detected === true ? " · D18: ĐANG PHÁT HIỆN" : autoState?.d18_detected === false ? " · D18: Không phát hiện" : " · D18: Chưa có trạng thái"}</p>
     {!autoMode && ready && autoState?.operator_protocol === 2 && autoState?.mechanics_enabled !== false && <button
       type="button" disabled={pending || autoState?.transitioning} onClick={() => void mutate({command: "MECHANICS OFF"}, "operator")}
       className="mx-3 mb-2 min-h-10 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 disabled:opacity-40">
       Nhận quyền điều khiển bánh (Đỏ)
     </button>}
-    <div className="mx-3 mb-3 mt-2 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 text-slate-100" aria-label="Terminal Python trực tiếp">
+    <div className="terminal-panel mx-3 mb-3 mt-2 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 text-slate-100" aria-label="Terminal Python trực tiếp">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
         <button type="button" onClick={() => setTerminalOpen(value => !value)}
           aria-expanded={terminalOpen} aria-controls="python-terminal-log"
@@ -641,14 +642,14 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     </div>
     <div ref={controlsScrollRef} className="controls-scroll" aria-label="Nội dung bảng điều khiển">
       <div role="tabpanel" id="control-panel-arm" aria-labelledby="control-tab-arm" hidden={tab !== "arm"} tabIndex={0}>
-        <div className="mb-3 flex items-center justify-between gap-2"><h3 className="control-section-title"><Grip size={16}/>Càng kẹp</h3><span className="text-[11px] text-slate-500">{robot?.busy ? `${robot.progress}% · đang chạy` : "Xem camera khi chỉnh khớp"}</span></div>
-        <div className="grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("GRIP OPEN")} className={`${button} !border-emerald-200 !bg-emerald-50 !text-emerald-800`}><PackageOpen size={17}/>Mở càng kẹp</button><button disabled={!canMove} onClick={() => action("GRIP CLOSE")} className={button}><Grip size={17}/>Đóng càng kẹp</button></div>
-        <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3">
+        <div className="mb-3 flex items-center justify-between gap-2 eco-gripper-heading"><h3 className="control-section-title"><Grip size={16}/>Càng kẹp</h3><span className="text-[11px] text-slate-500">{robot?.busy ? `${robot.progress}% · đang chạy` : "Xem camera khi chỉnh khớp"}</span></div>
+        <div className="eco-gripper-actions grid grid-cols-2 gap-2"><button disabled={!canMove} onClick={() => action("GRIP OPEN")} className={`${button} !border-emerald-200 !bg-emerald-50 !text-emerald-800`}><PackageOpen size={17}/>Mở càng kẹp</button><button disabled={!canMove} onClick={() => action("GRIP CLOSE")} className={button}><Grip size={17}/>Đóng càng kẹp</button></div>
+        <div className="eco-wrist-card mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3">
           <div className="mb-3 flex items-center justify-between gap-2"><div><h3 className="text-xs font-bold">Xoay càng D2 · bước 10°</h3><p className="mt-1 text-[10px] text-slate-500">Góc ước tính theo xung Arduino đã nhận</p></div><output aria-label="Góc xoay càng đã nhận" className="shrink-0 text-sm font-bold text-emerald-800">{wristLabel}</output></div>
           <div className="grid grid-cols-3 gap-2"><button type="button" aria-label="Xoay trái 10 độ" disabled={!advancedReady || !canMove || wristAngle == null || wristAngle <= -89.9} onClick={() => runOperator("WRIST LEFT")} className={button}><ArrowLeft size={14}/>Trái 10°</button><button type="button" aria-label="Đưa càng về 0 độ" disabled={!advancedReady || !canMove || wristAngle == null || Math.abs(wristAngle)<.1} onClick={() => runOperator("WRIST CENTER")} className={button}><RotateCcw size={13}/>0° · Oy</button><button type="button" aria-label="Xoay phải 10 độ" disabled={!advancedReady || !canMove || wristAngle == null || wristAngle >= 59.9} onClick={() => runOperator("WRIST RIGHT")} className={button}>Phải 10°<ArrowRight size={14}/></button></div>
           <p className="mt-2 text-[10px] text-slate-500">Giới hạn trái 90° ↔ phải 60°. Lần nhấn cuối dừng tại giới hạn.</p>
         </div>
-        <div className={`mt-3 rounded-2xl border p-3 ${advancedReady && autoState?.sensor_grasp_ready ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+        <div className={`eco-sensor-card mt-3 rounded-2xl border p-3 ${advancedReady && autoState?.sensor_grasp_ready ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
           <div className="mb-2 flex items-center justify-between gap-2"><h3 className="text-xs font-bold">Gắp theo cảm biến</h3><span className="text-xs font-semibold text-emerald-700">{ready && autoState?.sensor_tof_mm != null ? `${(autoState.sensor_tof_mm/10).toFixed(1)} cm` : "—"}</span></div>
           <p role="status" className="mb-3 text-[11px] text-slate-600">{!advancedReady ? "Chạy Python V3.16 để dùng nút 10° và gắp theo cảm biến." : autoState?.sensor_grasp_reason || "Đang kiểm tra cảm biến và tư thế tay"}</p>
           <div className="grid grid-cols-2 gap-2"><button type="button" disabled={!advancedReady || !canMove || !autoState?.sensor_grasp_ready} onClick={() => runOperator("GRASP SENSOR")} className={`${button} !border-emerald-600 !bg-emerald-600 !text-white`}><Grip size={15}/>Gắp theo cảm biến</button><button className={button} disabled={!canMove || !operatorReady || (advancedReady ? !autoState?.release_ready : mechanicsOn)} onClick={() => runOperator("RELEASE")}>Thả vật vào thùng</button></div>
