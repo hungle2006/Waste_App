@@ -586,7 +586,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           aria-expanded={terminalOpen} aria-controls="python-terminal-log"
           className="flex min-h-9 items-center gap-2 text-left text-xs font-bold text-white">
           <Radio size={15} className={brokerOnline && robot?.fresh ? "text-emerald-400" : "text-amber-400"}/>
-          Terminal Python <span className={brokerOnline && robot?.fresh ? "text-emerald-400" : "text-amber-400"}>
+          <span className="terminal-heading-text">Terminal Python</span> <span className={brokerOnline && robot?.fresh ? "text-emerald-400" : "text-amber-400"}>
             {brokerOnline && robot?.fresh ? "● Trực tiếp" : "○ Chờ Jetson"}</span>
           <ChevronDown size={13} className={terminalOpen ? "rotate-180" : ""}/>
         </button>
