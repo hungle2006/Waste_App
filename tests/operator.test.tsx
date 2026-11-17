@@ -341,6 +341,35 @@ describe('Operator controls with robot ACK',()=>{
 
 
 
+describe('Persistent camera while controlling the robot',()=>{
+ it('docks the existing LiveKit video, lets the operator move it, and keeps emergency STOP available',async()=>{
+  let mobilePortrait=false;
+  vi.stubGlobal('matchMedia',vi.fn().mockReturnValue({get matches(){return mobilePortrait;},media:'(max-width: 639px) and (orientation: portrait)'}));
+  render(<Page/>);
+  const video=screen.getByLabelText('Hình ảnh trực tiếp từ camera robot');
+  const slot=video.closest('.camera-slot') as HTMLElement;
+  const panel=video.closest('.camera-panel') as HTMLElement;
+  const scrollIntoView=vi.fn();
+  Object.defineProperty(slot,'scrollIntoView',{configurable:true,value:scrollIntoView});
+  let bottom=700;
+  Object.defineProperty(slot,'getBoundingClientRect',{configurable:true,value:()=>({bottom,top:bottom-378})});
+  expect(panel.dataset.docked).toBe('false');
+  bottom=40;
+  mobilePortrait=true;
+  fireEvent.scroll(window);
+  await waitFor(()=>expect(panel.dataset.docked).toBe('true'));
+  expect(screen.getByLabelText('Hình ảnh trực tiếp từ camera robot')).toBe(video);
+  fireEvent.click(screen.getByRole('button',{name:'Chuyển camera thu nhỏ sang trái'}));
+  expect(panel.dataset.dockSide).toBe('left');
+  fireEvent.click(screen.getByRole('button',{name:'Quay lại camera lớn'}));
+  expect(scrollIntoView).toHaveBeenCalled();
+  await connect();
+  fireEvent.click(screen.getByRole('button',{name:'Dừng khẩn từ camera thu nhỏ'}));
+  await waitFor(()=>expect(fake.requests.some(x=>x.body.command==='STOP')).toBe(true));
+  expect(fake.rooms).toBe(1);
+ });
+});
+
 describe('D22 gift control inside the camera panel',()=>{
  it('submits one gift request and locks repeated clicks until robot completion',async()=>{
   render(<Page/>);
