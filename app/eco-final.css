@@ -335,3 +335,195 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 .eco-shell .terminal-panel button[aria-expanded="false"]>.terminal-heading-text{grid-column:2;grid-row:1;font-size:12px;font-weight:750;white-space:nowrap}
 .eco-shell .terminal-panel button[aria-expanded="false"]>span:not(.terminal-heading-text){grid-column:2;grid-row:2;font-size:11px;white-space:nowrap}
 .eco-shell .terminal-panel button[aria-expanded="false"]>svg:last-child{grid-column:3;grid-row:1;position:static!important;justify-self:end}
+
+
+/* Persistent camera work area — Video-first operator UX.
+   Move the SAME LiveKit video node, never render a second player or request a new track.
+   Desktop/tablet: sticky camera within the full-height operator column.
+   Narrow portrait: primary controls follow camera; mini camera floats during long controls.
+*/
+.eco-shell .camera-slot {
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: 505px;
+  min-width: 0;
+  border-radius: 20px;
+}
+.eco-shell .camera-slot .camera-panel {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.eco-shell .camera-dock-actions,
+.eco-shell .camera-jump-button {display:none}
+.eco-shell .camera-heading .camera-primary-actions {margin-left:auto;min-width:0}
+.eco-shell .camera-panel[data-online="true"] .camera-heading>div:first-child:before {box-shadow:0 0 0 4px #27b77c20}
+.eco-shell .camera-panel[data-online="false"] .camera-heading>div:first-child:before {background:#e4b04c}
+.eco-shell .camera-slot:focus-within {scroll-margin-top:20px}
+@media(min-width:640px) {
+  .eco-shell .operator-workspace {
+    align-items: stretch!important;
+    grid-template-rows: auto;
+  }
+  .eco-shell .vision-column {
+    align-self: stretch!important;
+    height: auto!important;
+    min-height: 100%!important;
+    overflow: visible!important;
+  }
+  .eco-shell .camera-slot {
+    position: sticky!important;
+    top: 16px;
+    z-index: 15;
+    height: min(505px, calc(100dvh - 42px));
+    min-height: min(380px, calc(100dvh - 42px));
+  }
+  .eco-shell .camera-slot .camera-panel {
+    position: relative!important;
+    top: auto!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+}
+@media(min-width:640px) and (max-width:959px) {
+  .eco-shell .camera-slot {height:min(460px, calc(100dvh - 32px));min-height:260px}
+}
+@media(max-width:639px) {
+  .eco-shell .camera-slot {height:378px;min-height:378px}
+  .eco-shell .camera-slot .camera-panel {height:378px;min-height:378px;max-height:378px}
+  .eco-shell .camera-heading .camera-primary-actions:before {display:none}
+  .eco-shell .camera-jump-button {
+    display:inline-flex; align-items:center;justify-content:center;gap:4px;
+    height:36px;min-height:36px;padding:0 9px;
+    border-radius:10px;border:1px solid var(--eco-line);
+    color:var(--eco-forest);background:var(--eco-soft);
+    font-size:10px;font-weight:750;white-space:nowrap;
+  }
+  .eco-shell .camera-heading .camera-primary-actions>span[role="status"] {display:none}
+  .eco-shell .camera-heading .camera-primary-actions .camera-icon-button {height:36px;min-height:36px}
+}
+@media(max-width:639px) and (orientation:portrait) {
+  .eco-shell .operator-workspace{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:13px!important;
+    padding-bottom:max(30px,env(safe-area-inset-bottom));
+  }
+  /* No large stats/AI cards between the video and the motion controls. */
+  .eco-shell .vision-column {display:contents!important}
+  .eco-shell .camera-slot {order:0;position:relative!important;top:auto!important}
+  .eco-shell .control-panel {order:1}
+  .eco-shell .vision-telemetry {order:2}
+  .eco-shell .recognition-panel {order:3}
+  .eco-shell .vision-summary {display:none!important}
+  .eco-shell #mechanical-control {scroll-margin-top:16px}
+  .eco-shell .operator-workspace:has(.camera-panel[data-docked="true"]) {padding-bottom:max(176px,env(safe-area-inset-bottom))}
+  .eco-shell .camera-slot .camera-panel[data-docked="true"]:not([data-expanded="true"]):not(:fullscreen) {
+    position:fixed!important;
+    top:auto!important;
+    right:max(12px,env(safe-area-inset-right))!important;
+    left:auto!important;
+    bottom:calc(76px + env(safe-area-inset-bottom))!important;
+    z-index:95!important;
+    width:244px!important;
+    height:166px!important;
+    min-height:166px!important;
+    max-height:166px!important;
+    margin:0!important;
+    border:2px solid #3b926d!important;
+    border-radius:16px!important;
+    background:#fff!important;
+    overflow:hidden!important;
+    box-shadow:0 16px 48px #06281db8, 0 4px 12px #0b322b40;
+    animation:camera-dock-arrive 180ms cubic-bezier(.2,.8,.2,1) both;
+  }
+  .eco-shell .camera-slot .camera-panel[data-docked="true"][data-dock-side="left"]:not([data-expanded="true"]):not(:fullscreen) {
+    left:max(12px,env(safe-area-inset-left))!important;
+    right:auto!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-heading {
+    height:44px!important;
+    min-height:44px!important;
+    max-height:44px!important;
+    padding:0 5px 0 9px!important;
+    gap:2px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-heading>div:first-child:before{
+    width:7px;height:7px;margin-right:6px;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-heading>div:first-child h2 {
+    font-size:0!important;line-height:1!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-heading>div:first-child h2:after {
+    content:"CAM 01";font-size:10px;color:var(--eco-text);font-weight:800;white-space:nowrap;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-primary-actions {
+    display:flex!important;flex:none!important;gap:1px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-primary-actions>.camera-jump-button,
+  .eco-shell .camera-panel[data-docked="true"] .camera-primary-actions>.camera-icon-button {
+    display:none!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions {
+    display:flex!important;align-items:center;gap:1px;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button {
+    display:flex;align-items:center;justify-content:center;
+    width:40px;height:40px;min-width:40px;min-height:40px;
+    padding:0; border:0;border-radius:10px;
+    background:transparent;color:var(--eco-forest);
+    transition:background-color .15s ease,transform .15s ease;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button:hover,
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button:focus-visible {
+    background:var(--eco-mint);
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button:last-child {
+    background:#fef0ee;color:var(--eco-red);
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button:last-child:hover{
+    background:#fbdedc;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-viewport {
+    height:auto!important;min-height:0!important;flex:1!important;
+    margin:0 6px 6px!important;border-radius:9px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-viewport:after {
+    width:60px!important;height:60px!important;
+    box-shadow:inset 0 0 0 11px var(--eco-deep),inset 0 0 0 12px #1b4937!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-placeholder {
+    padding:5px 8px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-placeholder svg{
+    width:19px!important;height:19px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-placeholder p{
+    font-size:10px!important;margin:2px 0 0!important;
+    max-width:200px;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-placeholder button{
+    display:none!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .gift-bar,
+  .eco-shell .camera-panel[data-docked="true"] .camera-expansion-help {
+    display:none!important;
+  }
+}
+@keyframes camera-dock-arrive {
+  from {opacity:.5;transform:translateY(12px) scale(.96)}
+  to {opacity:1;transform:none}
+}
+@media(max-height:610px) and (max-width:639px) and (orientation:portrait){
+  .eco-shell .camera-slot .camera-panel[data-docked="true"]:not([data-expanded="true"]):not(:fullscreen){
+    bottom:calc(16px + env(safe-area-inset-bottom))!important;
+    width:212px!important;height:148px!important;min-height:148px!important;max-height:148px!important;
+  }
+  .eco-shell .camera-panel[data-docked="true"] .camera-dock-actions button{width:34px;min-width:34px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .eco-shell .camera-slot .camera-panel[data-docked="true"]{animation:none!important}
+}
