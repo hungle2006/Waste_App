@@ -174,6 +174,7 @@ describe('Operator controls with robot ACK',()=>{
   expect(fake.state.auto.auto_running).toBe(true);
   expect(screen.getByRole('button',{name:'Tiến thẳng'}).hasAttribute('disabled')).toBe(false);
   chooseTab('Cánh tay');
+  fireEvent.click(screen.getByText('Điều chỉnh xung servo & tư thế nâng cao'));
   fireEvent.change(screen.getByRole('spinbutton',{name:'Xung Xoay càng kẹp'}),{target:{value:'2300'}});
   fireEvent.click(screen.getAllByRole('button',{name:'Gửi'})[3]);
   await waitFor(()=>expect(fake.requests.some(x=>x.body.joint==='d2'&&x.body.pulse_us===2300)).toBe(true));
@@ -210,6 +211,7 @@ describe('Operator controls with robot ACK',()=>{
  });
  it('switching control groups releases held wheels and preserves joint drafts',async()=>{
   fake.state.auto.mechanics_enabled=false;fake.state.auto.auto_running=true;mount();await connect();
+  fireEvent.click(screen.getByText('Điều chỉnh xung servo & tư thế nâng cao'));
   fireEvent.change(screen.getByRole('spinbutton',{name:'Xung Xoay càng kẹp'}),{target:{value:'2300'}});
   chooseTab('Bánh xe');
   fireEvent.keyDown(screen.getByRole('button',{name:'Tiến thẳng'}),{key:' '});
