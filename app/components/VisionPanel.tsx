@@ -64,7 +64,7 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
 
   return <section className="recognition-panel" aria-label="Nhận diện rác">
     <div className="recognition-heading">
-      <div><h2><Focus size={15}/>Nhận diện rác</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả từ robot"}</p></div>
+      <div><h2><Focus size={15}/>Nhận diện rác bằng AI</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả mới nhất từ robot hoặc khung ảnh đã phân tích"}</p></div>
       <div className="recognition-actions">
         {frame && <button type="button" aria-label="Trực tiếp" onClick={() => onFrame(null)} title="Trở lại camera trực tiếp"><Video size={14}/><span>Trực tiếp</span></button>}
         <button type="button" aria-label={busy ? "Đang phân tích…" : "Phân tích ảnh"} disabled={!trackOnline || busy || autoActive} onClick={() => void capture()}
