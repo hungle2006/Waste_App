@@ -303,3 +303,15 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
   .eco-shell .recognition-objects[data-empty="false"]{margin-top:4px;max-height:26px}
   .eco-shell .recognition-counts{margin-top:10px}
 }
+
+
+/* Advanced mechanical setup is discoverable but folded until requested. */
+.eco-shell .eco-advanced-details{margin-top:14px!important;padding:0;border-radius:12px;border:1px solid var(--eco-line);background:var(--eco-soft)}
+.eco-shell .eco-advanced-details>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;padding:10px 13px;font-size:11px;font-weight:750;color:var(--eco-text)}
+.eco-shell .eco-advanced-details[open]>summary{border-bottom:1px solid var(--eco-line)}
+.eco-shell .eco-advanced-details>div{padding:0 12px 12px}
+@media(max-width:639px){
+ .eco-shell .recognition-actions button{height:44px;min-height:44px;width:44px;position:relative;top:-7px}
+ .eco-shell .recognition-panel:has(.recognition-objects[data-empty="false"]),
+ .eco-shell .recognition-panel:has(.recognition-sync[data-has-error="true"]){height:auto!important;min-height:208px!important;overflow:visible!important}
+}
