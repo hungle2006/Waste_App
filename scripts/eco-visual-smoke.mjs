@@ -71,14 +71,17 @@ for(const {width,height,targets} of plans){
       window.scrollTo(0,900);
     });
     await page.locator('.camera-panel[data-docked="true"]').waitFor({timeout:3000});
+    // Wait for the settled dock transition before checking its final usable footprint.
+    await page.waitForTimeout(260);
+    await page.screenshot({path:"artifacts/eco-ui/waste-mobile-camera-right.png",fullPage:false,animations:"disabled"});
     const mini=await page.evaluate(()=>{
       const panel=document.querySelector('.camera-panel');
       const video=document.querySelector('video[aria-label="Hình ảnh trực tiếp từ camera robot"]');
       const r=panel?.getBoundingClientRect();
-      return {videoNodes:document.querySelectorAll('video[aria-label="Hình ảnh trực tiếp từ camera robot"]').length,sameVideo:video===window.__persistentTestVideo,position:panel&&getComputedStyle(panel).position,rect:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right}:null,scrollWidth:document.documentElement.scrollWidth};
+      return {videoNodes:document.querySelectorAll('video[aria-label="Hình ảnh trực tiếp từ camera robot"]').length,sameVideo:video===window.__persistentTestVideo,position:panel&&getComputedStyle(panel).position,rect:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}:null,scrollWidth:document.documentElement.scrollWidth};
     });
     console.log("MOBILE_DOCKED_CAMERA "+JSON.stringify(mini));
-    if(mini.videoNodes!==1 || !mini.sameVideo || mini.position!=="fixed" || !mini.rect || mini.rect.top<0 || mini.rect.bottom>844 || mini.scrollWidth>390){failed=true;}
+    if(mini.videoNodes!==1 || !mini.sameVideo || mini.position!=="fixed" || !mini.rect || mini.rect.top<0 || mini.rect.bottom>844 || mini.rect.left<0 || mini.rect.right>390 || mini.rect.width>260 || mini.rect.height>180 || mini.scrollWidth>390){failed=true;console.log("FAILED mini camera bounding box")}
     if(!await page.getByRole("button",{name:"Dừng khẩn từ camera thu nhỏ"}).isVisible()){failed=true;}
     await page.getByRole("button",{name:"Chuyển camera thu nhỏ sang trái"}).click();
     if(await page.locator('.camera-panel').getAttribute('data-dock-side')!=="left"){failed=true;}
