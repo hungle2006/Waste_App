@@ -86,6 +86,7 @@ export default function Page() {
       setCameraDocked(Boolean(rect && mobilePortrait.matches && rect.bottom <= 60));
     };
     const schedule = () => {
+      if (typeof window.requestAnimationFrame !== "function") { sync(); return; }
       if (raf) return;
       raf = window.requestAnimationFrame(() => { raf = 0; sync(); });
     };
@@ -95,7 +96,7 @@ export default function Page() {
     return () => {
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
-      if (raf) window.cancelAnimationFrame(raf);
+      if (raf && typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(raf);
     };
   }, []);
   const returnToCamera = () => {
