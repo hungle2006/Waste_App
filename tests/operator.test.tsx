@@ -440,6 +440,22 @@ describe('D22 gift control inside the camera panel',()=>{
  });
 });
 
+describe('Task-first operator controls',()=>{
+  it('shows a five-button primary drive pad and keeps diagonal controls accessible via advanced drawer',async()=>{
+    fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
+    mount();await connect();chooseTab('Bánh xe');
+    const pad=document.querySelector('.drive-pad-primary');
+    expect(pad).not.toBeNull();
+    expect(pad!.querySelectorAll('button').length).toBe(5);
+    expect(screen.getByRole('button',{name:'Tiến thẳng'})).toBeTruthy();
+    expect(screen.getByRole('button',{name:'Dừng bánh'})).toBeTruthy();
+    expect(screen.queryByRole('button',{name:'Tiến chéo trái'})).toBeNull();
+    fireEvent.click(screen.getByText('Hướng chéo & tùy chọn nâng cao'));
+    expect(screen.getByRole('button',{name:'Tiến chéo trái'})).toBeTruthy();
+    expect(screen.getByRole('button',{name:'Lùi chéo phải'})).toBeTruthy();
+  });
+});
+
 describe('App-only 540ms movement after normal release',()=>{
  const prepare=async()=>{
   fake.state.auto.operator_protocol=2;fake.state.auto.mechanics_enabled=false;
@@ -449,7 +465,9 @@ describe('App-only 540ms movement after normal release',()=>{
  const commands=()=>fake.requests.map(x=>x.body.command).filter(Boolean);
  it.each(['Tiến thẳng','Lùi thẳng','Đi ngang trái','Đi ngang phải','Tiến chéo trái','Tiến chéo phải','Lùi chéo trái','Lùi chéo phải','Quay tại chỗ trái','Quay tại chỗ phải'])(
   '%s renews after key release and stops at 540ms',async(name)=>{
-   await prepare();const wheel=screen.getByRole('button',{name});
+   await prepare();
+   if(name.includes('chéo'))fireEvent.click(screen.getByText('Hướng chéo & tùy chọn nâng cao'));
+   const wheel=screen.getByRole('button',{name});
    fireEvent.keyDown(wheel,{key:' '});await advance(0);
    fireEvent.keyUp(wheel,{key:' '});
    expect(commands()).not.toContain('XM');
