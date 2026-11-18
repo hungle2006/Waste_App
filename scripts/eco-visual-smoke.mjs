@@ -43,6 +43,15 @@ for(const {width,height,targets} of plans){
   }
   if(report.scrollWidth>width+2 || !report.emergency || report.svgAssets.some(a=>!a.loaded) || report.visibleButtons<10 || errors.length){failed=true}
   if(await page.locator(".eco-hero").count()>0){failed=true;console.log("FAILED extra hero")}
+  const controlsClear=await page.evaluate(()=>{
+    const tabs=document.querySelector(".control-tabs")?.getBoundingClientRect();
+    const grip=document.querySelector(".eco-gripper-heading")?.getBoundingClientRect();
+    return {tabsBottom:tabs?.bottom,gripTop:grip?.top};
+  });
+  console.log("COMPACT_CONTROL_ALIGNMENT "+JSON.stringify({width,...controlsClear}));
+  if(controlsClear.tabsBottom!=null && controlsClear.gripTop!=null && controlsClear.tabsBottom>controlsClear.gripTop+2){
+    failed=true;console.log("FAILED control tabs overlap gripper header");
+  }
   console.log("ECO_LAYOUT_RESULT "+JSON.stringify({width,geometry:report.controls,differencesFromFigma:diffs,horizontalOverflow:report.scrollWidth>width+2,assetResults:report.svgAssets,visibleButtons:report.visibleButtons,errors}));
   if(width===1440){
     await page.evaluate(()=>window.scrollTo(0,600));
