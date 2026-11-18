@@ -82,9 +82,10 @@ for(const {width,height,targets} of plans){
       }
     });
     console.log("PORTRAIT_CAMERA_GEOMETRY "+JSON.stringify({width,...portrait}));
-    const videoRatio=portrait.surface?.h/portrait.surface?.w;
+    const stageCoverage=portrait.surface?.w/portrait.frame?.w;
     if(!portrait.frame || !portrait.surface ||
-       !videoRatio || videoRatio<1.035 || videoRatio>1.13 ||
+       !stageCoverage || stageCoverage<.90 || stageCoverage>1.01 ||
+       portrait.surface.h<250 ||
        portrait.videoFit!=="contain" || portrait.targetFits!==true || !portrait.giftActionVisible ||
        !portrait.giftIconVisible || !portrait.giftButtonDisabled ||
        !portrait.gift?.h || portrait.gift.h<45 || portrait.gift.h>55 ||
