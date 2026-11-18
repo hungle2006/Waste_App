@@ -135,7 +135,7 @@
     overflow:hidden;
     margin:0!important;
   }
-  .eco-shell .camera-slot .camera-panel{
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen){
     width:100%!important;
     height:100%!important;
     min-height:0!important;
@@ -143,6 +143,15 @@
     position:relative!important;
     top:auto!important;
     overflow:hidden!important;
+  }
+  .eco-shell .camera-slot:has(.camera-panel[data-expanded="true"]){overflow:visible!important}
+  .eco-shell .camera-slot .camera-panel[data-expanded="true"]{
+    position:fixed!important;inset:0!important;
+    z-index:110!important;width:100vw!important;height:100dvh!important;
+    max-height:none!important;max-width:none!important;border-radius:0!important;
+  }
+  .eco-shell .camera-slot .camera-panel:fullscreen{
+    width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
   }
   .eco-shell .camera-slot .camera-viewport{min-height:0!important}
   .eco-shell .vision-telemetry{
