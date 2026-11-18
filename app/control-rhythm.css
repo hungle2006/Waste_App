@@ -409,3 +409,11 @@
   .eco-shell #control-panel-drive .drive-advanced-chevron{transition:none!important}
   .eco-shell #control-panel-drive button{transition:none!important}
 }
+
+
+/* Legacy nth-child styling added an extra 10px above the turn row.
+   This explicit selector wins against it and restores a single 12px grid gap. */
+.eco-shell #control-panel-drive > div.drive-turn-actions{
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
