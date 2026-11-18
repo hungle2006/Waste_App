@@ -58,6 +58,41 @@ for(const {width,height,targets} of plans){
     failed=true;console.log("FAILED control tabs overlap gripper header");
   }
   console.log("ECO_LAYOUT_RESULT "+JSON.stringify({width,geometry:report.controls,differencesFromFigma:diffs,horizontalOverflow:report.scrollWidth>width+2,assetResults:report.svgAssets,visibleButtons:report.visibleButtons,errors}));
+  if(width>=960){
+    const portrait=await page.evaluate(()=>{
+      const get=s=>document.querySelector(s);
+      const rect=s=>get(s)?.getBoundingClientRect();
+      const frame=rect(".camera-slot"),surface=rect(".camera-viewport"),
+        gift=rect(".gift-bar"),telemetry=rect(".vision-telemetry"),
+        ai=rect(".recognition-panel");
+      const fit=get(".camera-viewport video");
+      const action=get(".gift-dispense");
+      const icon=get(".gift-emblem");
+      return {
+        frame:frame?{w:frame.width,h:frame.height}:null,
+        surface:surface?{w:surface.width,h:surface.height}:null,
+        gift:gift?{w:gift.width,h:gift.height}:null,
+        telemetryHeight:telemetry?.height,aiHeight:ai?.height,
+        videoFit:fit?getComputedStyle(fit).objectFit:null,
+        giftActionVisible:!!(action&&getComputedStyle(action).display!=="none"),
+        giftIconVisible:!!(icon&&getComputedStyle(icon).display!=="none"),
+        giftButtonDisabled:action?.disabled
+      }
+    });
+    console.log("PORTRAIT_CAMERA_GEOMETRY "+JSON.stringify({width,...portrait}));
+    const panelRatio=portrait.frame?.h/portrait.frame?.w,
+      videoRatio=portrait.surface?.h/portrait.surface?.w;
+    if(!panelRatio || panelRatio<.96 || panelRatio>1.16 ||
+       !videoRatio || videoRatio<1.035 || videoRatio>1.13 ||
+       portrait.videoFit!=="contain" || !portrait.giftActionVisible ||
+       !portrait.giftIconVisible || !portrait.giftButtonDisabled ||
+       !portrait.gift?.h || portrait.gift.h<45 || portrait.gift.h>55 ||
+       !portrait.telemetryHeight || portrait.telemetryHeight>53 ||
+       !portrait.aiHeight || portrait.aiHeight>110) {
+      failed=true;console.log("FAILED near-square camera / gift bar / compact telemetry");
+    }
+    await page.screenshot({path:"artifacts/eco-ui/waste-portrait-"+width+".png",fullPage:false,animations:"disabled"});
+  }
   if(width===1427){
     const first=await page.evaluate(()=>{
       const rect=sel=>document.querySelector(sel)?.getBoundingClientRect();
@@ -141,6 +176,15 @@ for(const {width,height,targets} of plans){
     await page.screenshot({path:"artifacts/eco-ui/waste-desktop-fixed-camera.png",fullPage:false,animations:"disabled"});
   }
   if(width===390){
+    const gift=await page.locator(".gift-bar").evaluate(el=>{
+      const rect=el.getBoundingClientRect();
+      return {w:rect.width,h:rect.height,title:el.querySelector(".gift-title")?.textContent,
+        button:el.querySelector(".gift-dispense")?.getAttribute("aria-label"),
+        icon:!!el.querySelector(".gift-emblem")};
+    });
+    console.log("MOBILE_GIFT_BAR "+JSON.stringify(gift));
+    if(gift.h<48 || gift.h>56 || !gift.icon || gift.button!=="Đổi quà")failed=true;
+
     // Primary control panel must be immediately after full-size camera, before statistics.
     const order=await page.evaluate(()=>{
       const camera=document.querySelector(".camera-slot")?.getBoundingClientRect();
