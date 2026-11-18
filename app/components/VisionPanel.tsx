@@ -62,7 +62,7 @@ export default function VisionPanel({robot, videoRef, trackOnline, frame, onFram
     }
   };
 
-  return <section className="recognition-panel" aria-label="Nhận diện rác">
+  return <section className="recognition-panel" data-has-results={objects !== null} data-has-frame={Boolean(frame)} data-has-error={Boolean(error)} aria-label="Nhận diện rác">
     <div className="recognition-heading">
       <div><h2><Focus size={15}/>Nhận diện rác bằng AI</h2><p>{frame ? `Khung ảnh lúc ${new Date(frame.capturedAt).toLocaleTimeString("vi-VN")}` : "Kết quả mới nhất từ robot hoặc khung ảnh đã phân tích"}</p></div>
       <div className="recognition-actions">
