@@ -1,0 +1,501 @@
+/*
+ * Waste Robot · UI Audit 2026-11-18
+ * A single final visual system for the already functioning control workflow.
+ * Source UX rules: Lucide outlined icons, 8px rhythm, 44px minimum targets,
+ * clear disabled states, consistent card alignment, visible focus/reduced motion.
+ * DO NOT change physical command, release, STOP or LiveKit behavior.
+ */
+.eco-shell {
+  --ui-ink:#12382d;
+  --ui-body:#36584b;
+  --ui-muted:#557266;
+  --ui-border:#dce9df;
+  --ui-surface:#ffffff;
+  --ui-surface-soft:#f6faf6;
+  --ui-brand:#13885c;
+  --ui-brand-tint:#eaf6ef;
+  --ui-danger:#ba3038;
+  --ui-danger-tint:#fff0ef;
+  --ui-radius:14px;
+  --ui-shadow:0 2px 7px rgba(12,45,30,.04);
+}
+.eco-shell .operator-header,
+.eco-shell .control-panel,
+.eco-shell .camera-panel,
+.eco-shell .vision-telemetry>div,
+.eco-shell .recognition-panel {
+  border-color:var(--ui-border)!important;
+  box-shadow:var(--ui-shadow)!important;
+}
+.eco-shell .control-panel {color:var(--ui-ink)}
+.eco-shell .control-toolbar h2 {
+  font-size:19px!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  color:var(--ui-ink)!important;
+}
+.eco-shell .operator-connection-label {
+  margin-top:4px!important;
+  font-size:12px!important;
+  line-height:1.3!important;
+  color:var(--ui-muted)!important;
+  font-weight:550!important;
+}
+.eco-shell .operator-connection-actions {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 46px 46px!important;
+  gap:8px!important;
+  min-width:0;
+}
+.eco-shell .operator-connection-actions .tool-button {
+  width:100%!important;
+  min-width:0!important;
+  min-height:44px!important;
+  height:44px!important;
+  border-radius:11px!important;
+  padding:0 10px!important;
+  font-size:12px!important;
+  font-weight:700!important;
+}
+.eco-shell .operator-connection-actions .tool-button svg {width:17px;height:17px;flex-shrink:0}
+.eco-shell .operator-connection-actions .connect-button {
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  letter-spacing:.003em;
+}
+.eco-shell .operator-connection-actions button[aria-label="Dừng cơ khí"]{
+  background:var(--ui-danger-tint)!important;
+  color:var(--ui-danger)!important;
+  border-color:#f2c5c4!important;
+}
+.eco-shell .operator-connection-actions button[aria-label="Dừng cơ khí"]:hover{
+  background:#ffe0dd!important;border-color:#efadac!important;
+}
+.eco-shell .control-hold-bar {
+  margin-block:8px 0!important;
+  border:1px solid var(--ui-border)!important;
+  border-radius:11px!important;
+  background:var(--ui-surface-soft)!important;
+  min-height:44px!important;
+  padding:4px 5px 4px 12px!important;
+  align-items:center!important;
+}
+.eco-shell .hold-caption{
+  font-size:12px!important;
+  line-height:1.3!important;
+  color:var(--ui-body)!important;
+}
+.eco-shell .control-hold-bar .tool-button{
+  height:36px!important;
+  min-height:36px!important;
+  border-radius:9px!important;
+  padding-inline:12px!important;
+  font-size:12px!important;
+  white-space:nowrap!important;
+}
+.eco-shell .control-message {
+  border:1px solid #e6efe9!important;
+  border-radius:9px!important;
+  background:#f8fbf9!important;
+  padding:8px 10px!important;
+  color:var(--ui-body)!important;
+  font-size:11.5px!important;
+  line-height:1.35!important;
+  min-height:32px!important;
+  max-height:52px!important;
+  overflow:hidden!important;
+  overflow-wrap:anywhere!important;
+}
+.eco-shell .control-message.text-amber-700{
+  border-color:#f4deba!important;
+  color:#8c5616!important;
+  background:#fff9ec!important;
+}
+.eco-shell .control-tabs {
+  min-width:0!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.eco-shell .control-tabs button{
+  border:1px solid transparent!important;
+  min-width:0!important;
+  min-height:48px!important;height:48px!important;
+  border-radius:11px!important;
+  color:#426657!important;
+  background:#f2f7f2!important;
+  font-size:12px!important;
+  font-weight:750!important;
+  gap:8px!important;
+  box-shadow:none!important;
+}
+.eco-shell .control-tabs button svg.control-tab-icon{
+  width:18px!important;
+  height:18px!important;
+  stroke-width:2.1;
+  opacity:1!important;
+  flex-shrink:0!important;
+}
+.eco-shell .control-tabs button.is-selected{
+  background:#103d2f!important;
+  color:white!important;
+  border-color:#103d2f!important;
+  box-shadow:0 5px 14px rgba(10,58,41,.14)!important;
+}
+.eco-shell .control-tabs button:not(.is-selected):hover{
+  background:var(--ui-brand-tint)!important;
+  border-color:#c7dfcc!important;
+  color:#174733!important;
+}
+/* Disabled is visibly locked, but no longer washed out / illegible. */
+.eco-shell .control-panel .tool-button:disabled,
+.eco-shell .control-panel .btn:disabled,
+.eco-shell .control-panel .drive-pad button:disabled,
+.eco-shell .control-panel .eco-gripper-actions button:disabled,
+.eco-shell .control-panel .eco-wrist-card button:disabled,
+.eco-shell .control-panel .eco-follow-up-actions button:disabled{
+  opacity:1!important;
+  background:#f3f6f3!important;
+  color:#526b5f!important;
+  border-color:#dfe8e1!important;
+  box-shadow:none!important;
+  filter:none!important;
+  cursor:not-allowed!important;
+  transform:none!important;
+}
+.eco-shell .control-panel button:disabled svg {
+  color:inherit!important;
+  opacity:.88!important;
+}
+.eco-shell .control-panel .drive-stop-button:not(:disabled){
+  background:var(--ui-danger-tint)!important;
+  color:var(--ui-danger)!important;
+  border-color:#f3bdbc!important;
+}
+.eco-shell .control-panel .drive-stop-button:not(:disabled) svg {color:var(--ui-danger)!important}
+.eco-shell .controls-scroll [role="tabpanel"]{
+  min-width:0!important;
+}
+.eco-shell .controls-scroll .control-section-title{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  font-size:14px!important;
+  font-weight:750!important;
+  color:var(--ui-ink)!important;
+  line-height:1.35!important;
+}
+.eco-shell .controls-scroll .control-section-title svg,
+.eco-shell .sensor-card-heading h3 svg {
+  width:18px!important;height:18px!important;
+  color:var(--ui-brand)!important;
+  stroke-width:2.05;
+}
+.eco-shell .eco-gripper-heading{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  min-height:49px!important;
+  height:auto!important;
+  padding:10px 14px!important;
+  background:var(--ui-surface-soft)!important;
+  border-color:var(--ui-border)!important;
+  border-radius:var(--ui-radius) var(--ui-radius) 0 0!important;
+}
+.eco-shell .gripper-hint{
+  max-width:48%;
+  text-align:right;
+  color:var(--ui-muted)!important;
+  font-size:11px!important;
+  font-weight:550;
+  line-height:1.25;
+}
+.eco-shell .eco-gripper-actions{
+  gap:10px!important;
+  padding:0 12px 12px!important;
+  border-color:var(--ui-border)!important;
+  border-radius:0 0 var(--ui-radius) var(--ui-radius)!important;
+  background:var(--ui-surface-soft)!important;
+}
+.eco-shell .eco-gripper-actions button{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  min-height:54px!important;height:54px!important;
+  border-radius:10px!important;
+  gap:9px!important;
+  font-size:12px!important;font-weight:730!important;
+}
+.eco-shell .eco-gripper-actions button svg{
+  width:18px!important;height:18px!important;stroke-width:2!important;
+}
+.eco-shell .eco-wrist-card{
+  border:1px solid var(--ui-border)!important;
+  background:white!important;
+  border-radius:var(--ui-radius)!important;
+  padding:14px!important;
+  margin-top:12px!important;
+}
+.eco-shell .eco-wrist-card>div:first-child{
+  margin-bottom:12px!important;
+  align-items:center!important;
+}
+.eco-shell .eco-wrist-card h3{
+  font-size:13px!important;
+  line-height:1.3!important;
+  color:var(--ui-ink)!important;
+}
+.eco-shell .eco-wrist-card output{
+  min-width:93px;
+  text-align:center;
+  font-size:11px!important;
+  font-weight:750!important;
+  border:1px solid #cde4d4!important;
+  padding:7px 12px!important;
+  color:#1b593e!important;
+  background:var(--ui-brand-tint)!important;
+}
+.eco-shell .eco-wrist-card .grid{
+  gap:9px!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+.eco-shell .eco-wrist-card .grid button{
+  min-width:0!important;
+  min-height:50px!important;height:50px!important;
+  border-radius:10px!important;
+  font-size:12px!important;line-height:1.25!important;
+  gap:6px!important;
+  padding-inline:5px!important;
+}
+.eco-shell .eco-wrist-card .grid button svg{width:16px;height:16px;flex-shrink:0}
+.eco-shell .eco-sensor-card{
+  border:1px solid var(--ui-border)!important;
+  background:var(--ui-surface-soft)!important;
+  border-radius:var(--ui-radius)!important;
+  margin-top:12px!important;
+  padding:14px!important;
+}
+.eco-shell .eco-sensor-card::before{display:none!important}
+.eco-shell .sensor-card-heading{margin-bottom:8px!important}
+.eco-shell .sensor-card-heading h3{
+  display:inline-flex!important;align-items:center!important;
+  gap:9px!important;
+  font-size:13px!important;
+  font-weight:760!important;
+  color:var(--ui-ink)!important;
+}
+.eco-shell .sensor-card-heading span{font-size:12px!important}
+.eco-shell .eco-sensor-card p[role="status"]{
+  margin-bottom:11px!important;
+  line-height:1.35!important;font-size:11.5px!important;color:var(--ui-body)!important;
+}
+.eco-shell .eco-grasp-action button,
+.eco-shell .eco-follow-up-actions button{
+  display:inline-flex!important;
+  align-items:center;justify-content:center;
+  gap:8px!important;
+  min-height:49px!important;height:49px!important;
+  border-radius:11px!important;
+  font-size:12px!important;
+  font-weight:750!important;
+}
+.eco-shell .eco-grasp-action button{width:100%!important}
+.eco-shell .eco-grasp-action button svg,
+.eco-shell .eco-follow-up-actions button svg{width:17px!important;height:17px!important;flex-shrink:0}
+.eco-shell .eco-follow-up-actions{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px!important;
+  margin-top:9px!important;
+}
+.eco-shell .control-details {
+  border-color:var(--ui-border)!important;
+  border-radius:11px!important;
+  background:#f9fcf9!important;
+}
+.eco-shell .control-details>summary,
+.eco-shell .operator-extra>summary{
+  min-height:44px!important;
+  display:flex;align-items:center;
+  gap:8px!important;
+  color:var(--ui-body)!important;
+  font-weight:650!important;
+  font-size:12px!important;
+  cursor:pointer;
+  line-height:1.3!important;
+}
+.eco-shell .control-details>summary:focus-visible,
+.eco-shell .operator-extra>summary:focus-visible{
+  outline:3px solid var(--ui-brand)!important;outline-offset:2px!important;
+}
+.eco-shell .drive-pad-primary{
+  border-color:#d8e6dd!important;
+  background:linear-gradient(165deg,#f0f7f1,#f7faf7)!important;
+  padding:12px!important;
+  gap:9px!important;
+  border-radius:18px!important;
+}
+.eco-shell .drive-pad-primary button{
+  border-radius:12px!important;
+  min-height:78px!important;
+  height:78px!important;
+  gap:6px!important;
+}
+.eco-shell .drive-pad-primary button .drive-direction-icon{
+  width:24px!important;height:24px!important;
+  stroke-width:2.15;
+}
+.eco-shell .drive-pad-primary button .drive-direction-label{
+  font-size:11px!important;
+  font-weight:750!important;
+}
+.eco-shell .drive-pad-primary button[aria-pressed="true"]:not(:disabled){
+  color:white!important;background:#13865c!important;
+  border-color:#13865c!important;
+}
+.eco-shell .drive-pad-primary button[aria-pressed="true"] .drive-direction-icon{color:white!important}
+.eco-shell .drive-pad-primary .drive-stop-button {
+  min-height:78px!important;height:78px!important;
+  border-radius:12px!important;
+  font-size:11px!important;
+  font-weight:750!important;
+}
+.eco-shell #control-panel-drive>div:first-child{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  max-width:540px;width:100%;margin-inline:auto;
+}
+.eco-shell #control-panel-drive label{
+  flex-shrink:0;
+  display:inline-flex;align-items:center;gap:8px!important;
+  font-size:12px!important;color:var(--ui-body)!important;
+}
+.eco-shell #control-panel-drive input[type=number]{
+  width:66px!important;
+  min-height:44px!important;
+  text-align:center;
+  border:1px solid var(--ui-border)!important;
+  background:white;
+  color:#147249!important;
+  font-size:13px!important;
+  font-weight:800!important;
+  border-radius:10px!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary,
+.eco-shell #control-panel-drive>div:nth-child(3){
+  width:100%;margin-inline:auto;
+}
+.eco-shell #control-panel-drive>div:nth-child(3){
+  max-width:410px;
+  gap:9px!important;
+  margin-top:10px!important;
+}
+.eco-shell #control-panel-drive>div:nth-child(3) button{
+  min-height:47px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+}
+.eco-shell #control-panel-bins>.grid button{
+  min-height:66px!important;border-radius:12px!important;
+  padding:12px!important;
+  color:var(--ui-ink);
+  border-color:var(--ui-border);
+}
+.eco-shell #control-panel-bins button[data-selected="true"]:not(:disabled){
+  border:2px solid #238f60!important;
+  background:#e8f8ee!important;
+  color:#155339!important;
+}
+.eco-shell #control-panel-bins button[data-selected="true"] svg{stroke-width:2.2}
+.eco-shell #control-panel-auto [role="status"]{
+  line-height:1.5!important;
+  font-size:12px!important;
+}
+.eco-shell .operator-extra{
+  border-color:var(--ui-border)!important;
+  background:var(--ui-surface-soft)!important;
+  margin-top:12px!important;
+}
+/* Do not hide faults, warnings, AI classification or hardware state. */
+.eco-shell .recognition-panel,
+.eco-shell .vision-telemetry>div{color:var(--ui-ink)}
+.eco-shell .vision-telemetry strong{font-weight:800!important}
+.eco-shell .recognition-heading h2{color:var(--ui-ink)!important}
+.eco-shell .recognition-actions button{
+  min-height:34px!important;height:34px!important;
+  color:var(--ui-body)!important;
+}
+.eco-shell .recognition-counts>div{background:#f4f8f4!important;border-radius:10px!important}
+.eco-shell .recognition-counts>div span{color:#4c6759!important}
+.eco-shell .recognition-counts>div strong{color:var(--ui-ink)!important}
+.eco-shell .gift-dispense:not(:disabled){box-shadow:0 4px 12px rgba(22,153,102,.16)!important}
+.eco-shell button:not(:disabled){cursor:pointer}
+@media(min-width:960px) and (min-height:610px){
+  .eco-shell .operator-header{
+    border-radius:16px!important;
+    grid-template-columns:minmax(0,1fr) 140px 180px 190px!important;
+    gap:12px!important;
+  }
+  .eco-shell .emergency-button{
+    width:190px!important;min-width:190px!important;
+    border-radius:11px!important;
+  }
+  .eco-shell .control-toolbar{
+    flex-basis:108px!important;
+    height:108px!important;
+    min-height:108px!important;
+    padding:14px 17px 9px!important;
+  }
+  .eco-shell .control-toolbar>div:last-child{margin-top:8px!important}
+  .eco-shell .control-tabs{
+    top:108px!important;
+    padding:8px 17px!important;
+  }
+  .eco-shell .control-hold-bar{margin-inline:17px!important}
+  .eco-shell .control-message{margin-inline:17px!important}
+  .eco-shell .controls-scroll{padding:17px 17px 23px!important}
+  .eco-shell .controls-scroll>div[role="tabpanel"]{
+    width:100%;max-width:590px;margin-inline:auto;
+  }
+}
+@media(max-width:959px){
+  .eco-shell .control-hold-bar{margin-inline:14px!important}
+  .eco-shell .control-message{margin-inline:14px!important}
+  .eco-shell .operator-connection-actions{gap:7px!important}
+  .eco-shell .control-tabs{gap:6px!important}
+  .eco-shell .control-tabs button{min-height:46px!important;height:46px!important;font-size:11px!important;gap:5px!important}
+  .eco-shell .control-tabs button svg.control-tab-icon{height:16px!important;width:16px!important}
+  .eco-shell .eco-gripper-actions button{min-height:50px!important;height:50px!important}
+  .eco-shell .drive-pad-primary button,
+  .eco-shell .drive-pad-primary .drive-stop-button{height:72px!important;min-height:72px!important}
+}
+@media(max-width:400px){
+  .eco-shell .operator-connection-actions{grid-template-columns:minmax(0,1fr) 42px 42px!important}
+  .eco-shell .control-tabs button{font-size:10.5px!important;gap:3px!important;padding-inline:4px!important}
+  .eco-shell #control-panel-drive>div:first-child{gap:8px!important}
+  .eco-shell #control-panel-drive>div:first-child>div>p{max-width:210px}
+  .eco-shell .gripper-hint{display:none}
+  .eco-shell .eco-wrist-card .grid button{font-size:11px!important}
+  .eco-shell .drive-pad-primary{padding:9px!important;gap:7px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .eco-shell button,.eco-shell summary{transition:none!important;animation:none!important}
+}
+
+
+/* QA finding: at 1427×726 the empty AI grid was 9px taller than its card.
+ * Keep its four badges visible without adding a fake scrollbar. */
+@media(min-width:960px) and (min-height:610px){
+  .eco-shell .recognition-panel[data-has-results="false"] .recognition-counts{
+    margin-top:4px!important;
+  }
+  .eco-shell .recognition-panel[data-has-results="false"] .recognition-counts>div{
+    height:39px!important;
+    min-height:39px!important;
+    padding:6px 10px!important;
+  }
+}
+.eco-shell .control-hold-bar{
+  min-height:52px!important;
+}
+.eco-shell .control-hold-bar .tool-button{
+  height:44px!important;min-height:44px!important;
+}
