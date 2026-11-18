@@ -164,20 +164,10 @@ export default function Page() {
 
   return <main className="operator-shell eco-shell">
     <header className="operator-header">
-      <div className="operator-brand flex min-w-0 items-center gap-2.5"><div className="brand-mark"><img src="/eco/brand.svg" alt="" width="46" height="46"/></div><div className="min-w-0"><h1 className="text-sm font-bold sm:text-base">WASTE ROBOT</h1><p className="brand-subtitle">SMART SORTING&nbsp; / &nbsp;V3.16</p></div></div>
+      <div className="operator-brand flex min-w-0 items-center gap-2.5"><div className="brand-mark"><img src="/eco/brand.svg" alt="" width="46" height="46"/></div><div className="min-w-0"><h1 className="text-sm font-bold sm:text-base">WASTE ROBOT</h1><p className="brand-subtitle">ĐIỀU KHIỂN ROBOT</p></div></div>
       <div role="group" aria-label="Chế độ vận hành" className="mode-switch"><button type="button" aria-pressed={mode === "manual"} onClick={() => setMode("manual")}>MANUAL</button><button type="button" aria-pressed={mode === "auto"} onClick={() => setMode("auto")}>AUTO</button></div>
       <div className="header-actions flex items-center gap-2"><span className={`header-connection ${fresh ? "text-emerald-700" : "text-slate-500"}`} title={fresh ? "Python đang gửi trạng thái mới" : "Chưa nhận trạng thái robot mới"}>{fresh ? <Wifi size={15}/> : <WifiOff size={15}/>}<span>{fresh ? "ROBOT ONLINE" : "CHỜ ROBOT"}</span></span><button type="button" aria-label="DỪNG KHẨN" onClick={stop} className="emergency-button"><CircleStop size={18}/><span className="emergency-label">DỪNG KHẨN</span><span className="emergency-short" aria-hidden="true">DỪNG</span></button></div>
     </header>
-    <section className="eco-hero" aria-label="Công nghệ xanh và phân loại thông minh">
-      <span className="eco-eyebrow">◈ &nbsp; ECO OPERATIONS</span>
-      <h2>Công nghệ xanh. &nbsp;Hành động thật.</h2>
-      <p className="eco-hero-description">Giám sát, nhận diện và phân loại rác bằng robot thông minh.</p>
-      <p className="eco-hero-footer">BUILD A GREENER TOMORROW</p>
-      <img src="/eco/hero-art.svg" className="eco-hero-art" width="432" height="168" alt="" />
-      <img src="/eco/mobile-ring.svg" className="eco-mobile-ring" alt="" />
-      <img src="/eco/mobile-leaf.svg" className="eco-mobile-leaf" alt="" />
-    </section>
-    <p className="eco-stage-label">TRẠM ĐIỀU KHIỂN &nbsp; • &nbsp; THEO THỜI GIAN THỰC</p>
     <div className="operator-workspace">
       <section className="vision-column" aria-label="Camera và trạng thái robot">
         <div className="camera-slot" ref={cameraSlotRef} data-camera-slot="true"><Cam videoRef={videoRef} frame={frame} connected={livekitConnected} trackOnline={trackOnline} gift={fresh?robot?.gift:undefined} giftAllowed={giftAllowed} giftPending={giftClickPending} giftError={giftError} onGift={()=>void dispenseGift()} onStop={stop} onReconnect={() => setCameraSession(session => session + 1)} docked={cameraDocked} dockSide={dockSide} onMoveDock={() => setDockSide(side => side === "right" ? "left" : "right")} onReturnToCamera={returnToCamera} onJumpToControls={jumpToControls}/></div>
