@@ -13,8 +13,8 @@ const plans=[
     ".camera-panel":[18,null,null,null],".control-panel":[null,null,null,null]
   }},
   {width:390,height:844,targets:{
-    ".operator-header":[0,0,390,106],".camera-slot":[12,null,366,318],
-    ".camera-panel":[12,null,366,318],".control-panel":[12,null,366,null]
+    ".operator-header":[0,0,390,106],".camera-slot":[12,null,366,null],
+    ".camera-panel":[12,null,366,null],".control-panel":[12,null,366,null]
   }},
   {width:375,height:812,targets:{}},
   {width:768,height:1024,targets:{}}
@@ -94,6 +94,23 @@ for(const {width,height,targets} of plans){
       failed=true;console.log("FAILED near-square camera / gift bar / compact telemetry");
     }
     await page.screenshot({path:"artifacts/eco-ui/waste-portrait-"+width+".png",fullPage:false,animations:"disabled"});
+  }
+  if(width<960){
+    const shape=await page.evaluate(()=>{
+      const slot=document.querySelector(".camera-slot")?.getBoundingClientRect();
+      const surface=document.querySelector(".camera-viewport")?.getBoundingClientRect();
+      const video=document.querySelector(".camera-viewport video");
+      return {slot:slot?{w:slot.width,h:slot.height}:null,
+        surface:surface?{w:surface.width,h:surface.height}:null,
+        videoFit:video?getComputedStyle(video).objectFit:null};
+    });
+    console.log("RESPONSIVE_CAMERA_SHAPE "+JSON.stringify({width,...shape}));
+    const cardRatio=shape.slot?.h/shape.slot?.w,videoRatio=shape.surface?.h/shape.surface?.w;
+    if(!cardRatio || cardRatio<1.03 || cardRatio>1.14 ||
+       !videoRatio || videoRatio<1.04 || videoRatio>1.13 ||
+       shape.videoFit!=="contain"){
+      failed=true;console.log("FAILED tablet/mobile near-square live camera");
+    }
   }
   if(width===1427){
     const first=await page.evaluate(()=>{
