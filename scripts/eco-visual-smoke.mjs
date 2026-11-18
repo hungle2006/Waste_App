@@ -3,6 +3,11 @@ import fs from "node:fs";
 
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const plans=[
+  {width:1427,height:726,targets:{
+    ".operator-header":[14,10,null,66],".camera-slot":[14,null,null,null],
+    ".camera-panel":[14,null,null,null],".control-panel":[null,null,null,null]
+  }},
+  {width:1366,height:768,targets:{}},
   {width:1440,height:900,targets:{
     ".operator-header":[18,12,null,68],".camera-slot":[18,null,null,null],
     ".camera-panel":[18,null,null,null],".control-panel":[null,null,null,null]
@@ -53,6 +58,60 @@ for(const {width,height,targets} of plans){
     failed=true;console.log("FAILED control tabs overlap gripper header");
   }
   console.log("ECO_LAYOUT_RESULT "+JSON.stringify({width,geometry:report.controls,differencesFromFigma:diffs,horizontalOverflow:report.scrollWidth>width+2,assetResults:report.svgAssets,visibleButtons:report.visibleButtons,errors}));
+  if(width===1427){
+    const first=await page.evaluate(()=>{
+      const rect=sel=>document.querySelector(sel)?.getBoundingClientRect();
+      const camera=rect(".camera-slot"),video=rect(".camera-viewport");
+      const monitor=document.querySelector(".recognition-panel");
+      const counts=rect(".recognition-counts");
+      const tabs=rect(".control-tabs");
+      const control=document.querySelector(".control-panel");
+      const scroll=document.querySelector(".operator-workspace");
+      return {
+        cameraHeight:camera?.height,videoHeight:video?.height,aiHeight:monitor?.clientHeight,
+        aiScrollHeight:monitor?.scrollHeight,aiOverflow:monitor&&getComputedStyle(monitor).overflowY,
+        countBottom:counts?.bottom,aiBottom:monitor?.getBoundingClientRect().bottom,
+        tabBottom:tabs?.bottom,controlTop:control?.getBoundingClientRect().top,
+        headerTop:rect(".operator-header")?.top,
+        rightOverflow:control&&getComputedStyle(control).overflowY,
+        workspaceOverflow:scroll&&getComputedStyle(scroll).overflow,
+        pageScroll:document.documentElement.scrollHeight>window.innerHeight+2,
+        horizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+2
+      };
+    });
+    console.log("LAPTOP_REFERENCE_1427 "+JSON.stringify(first));
+    if(!first.cameraHeight || first.cameraHeight<390 || !first.videoHeight || first.videoHeight<292 ||
+       !first.aiHeight || first.aiHeight>125 ||
+       !first.countBottom || !first.aiBottom || first.countBottom>first.aiBottom+2 ||
+       first.aiOverflow!=="hidden" || first.aiScrollHeight>first.aiHeight+4 ||
+       first.rightOverflow!=="auto" || first.workspaceOverflow!=="hidden" ||
+       first.pageScroll || first.horizontalOverflow){
+       failed=true;console.log("FAILED laptop 1427 alignment reference");
+    }
+    await page.getByRole("tab",{name:"Bánh xe"}).click();
+    const pad=await page.locator(".drive-pad-primary").evaluate(el=>{
+      const rect=el.getBoundingClientRect(),panel=document.querySelector(".control-panel")?.getBoundingClientRect();
+      return {left:rect.left,right:rect.right,width:rect.width,
+        centerDelta:panel?Math.abs((rect.left+rect.right)/2-(panel.left+panel.right)/2):null};
+    });
+    console.log("LAPTOP_DRIVE_PAD_ALIGNMENT "+JSON.stringify(pad));
+    if(!pad.width || pad.width>420 || (pad.centerDelta??100)>18)failed=true;
+    await page.screenshot({path:"artifacts/eco-ui/waste-1427-drive.png",fullPage:false,animations:"disabled"});
+    const beforeScroll=await page.locator(".camera-slot").evaluate(el=>el.getBoundingClientRect().top);
+    await page.locator(".operator-extra>summary").click();
+    await page.locator(".control-panel").evaluate(el=>{el.scrollTop=el.scrollHeight;});
+    await page.waitForTimeout(250);
+    const afterScroll=await page.evaluate(()=>({
+      cameraTop:document.querySelector(".camera-slot")?.getBoundingClientRect().top,
+      controlScroll:document.querySelector(".control-panel")?.scrollTop,
+      pageScroll:window.scrollY,
+      liveVideos:document.querySelectorAll('video[aria-label="Hình ảnh trực tiếp từ camera robot"]').length,
+    }));
+    console.log("LAPTOP_1427_FIXED_MONITOR "+JSON.stringify(afterScroll));
+    if(Math.abs((afterScroll.cameraTop??-999)-beforeScroll)>2 ||
+       (afterScroll.controlScroll??0)<20 || afterScroll.pageScroll!==0 || afterScroll.liveVideos!==1)failed=true;
+    await page.screenshot({path:"artifacts/eco-ui/waste-1427-fixed-camera.png",fullPage:false,animations:"disabled"});
+  }
   if(width===1440){
     const initial=await page.evaluate(()=>{
       const cam=document.querySelector(".camera-slot")?.getBoundingClientRect();
