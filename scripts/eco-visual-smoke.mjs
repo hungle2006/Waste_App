@@ -4,14 +4,12 @@ import fs from "node:fs";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const plans=[
   {width:1440,height:900,targets:{
-    ".operator-header":[24,20,1392,78],".eco-hero":[24,114,1392,168],
-    ".camera-panel":[24,325,818,505],".control-panel":[858,325,558,null],
-    ".vision-telemetry":[24,844,null,null],".recognition-panel":[24,948,null,null]
+    ".operator-header":[18,12,null,68],".camera-slot":[18,null,null,null],
+    ".camera-panel":[18,null,null,null],".control-panel":[null,null,null,null]
   }},
   {width:390,height:844,targets:{
-    ".operator-header":[0,0,390,73],".eco-hero":[12,85,366,122],
-    ".camera-panel":[12,263,366,378],".camera-slot":[12,263,366,378],
-    ".control-panel":[12,654,366,null]
+    ".operator-header":[0,0,390,106],".camera-slot":[12,null,366,318],
+    ".camera-panel":[12,null,366,318],".control-panel":[12,null,366,null]
   }},
   {width:375,height:812,targets:{}},
   {width:768,height:1024,targets:{}}
@@ -27,7 +25,7 @@ for(const {width,height,targets} of plans){
   await page.screenshot({path:"artifacts/eco-ui/waste-"+width+".png",fullPage:true,animations:"disabled"});
   const report=await page.evaluate(()=>{
     const rect=(sel)=>{const n=document.querySelector(sel);if(!n)return null;const r=n.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y+scrollY),w:Math.round(r.width),h:Math.round(r.height)}};
-    const elements=[".operator-header",".eco-hero",".camera-slot",".camera-panel",".vision-telemetry",".recognition-panel",".control-panel",".mode-switch",".emergency-button"];
+    const elements=[".operator-header",".camera-slot",".camera-panel",".vision-telemetry",".recognition-panel",".control-panel",".mode-switch",".emergency-button"];
     return {
       scrollWidth:document.documentElement.scrollWidth, viewportWidth:window.innerWidth,
       controls:Object.fromEntries(elements.map(sel=>[sel,rect(sel)])),
@@ -44,6 +42,7 @@ for(const {width,height,targets} of plans){
     if(deviations.some(v=>v!==null&&Math.abs(v)>8)){failed=true;}
   }
   if(report.scrollWidth>width+2 || !report.emergency || report.svgAssets.some(a=>!a.loaded) || report.visibleButtons<10 || errors.length){failed=true}
+  if(await page.locator(".eco-hero").count()>0){failed=true;console.log("FAILED extra hero")}
   console.log("ECO_LAYOUT_RESULT "+JSON.stringify({width,geometry:report.controls,differencesFromFigma:diffs,horizontalOverflow:report.scrollWidth>width+2,assetResults:report.svgAssets,visibleButtons:report.visibleButtons,errors}));
   if(width===1440){
     await page.evaluate(()=>window.scrollTo(0,600));
