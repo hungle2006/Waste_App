@@ -121,10 +121,10 @@
   .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen) .camera-viewport{
     grid-row:2;
     align-self:center!important;justify-self:center!important;
-    width:auto!important;height:calc(100% - 10px)!important;
+    width:calc(100% - 24px)!important;height:calc(100% - 10px)!important;
     max-width:calc(100% - 24px)!important;
     min-height:0!important;
-    aspect-ratio:1 / 1.08!important;
+    aspect-ratio:auto!important;
     margin:0!important;
     border-radius:13px!important;
   }
