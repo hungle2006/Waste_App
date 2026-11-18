@@ -1,0 +1,296 @@
+/* Waste Robot / Operator Console V3
+   Layout only. LiveKit media remains mounted once; STOP/ACK/wheel dead-man logic unchanged. */
+
+.eco-shell .control-tabs .eco-tab-long{display:none!important}
+.eco-shell .control-tabs .eco-tab-short{display:inline!important}
+.eco-shell .control-tabs button{
+  font-weight:800!important;
+  letter-spacing:.005em;
+}
+.eco-shell .drive-pad-primary {
+  width:100%;
+  max-width:470px;
+  margin-inline:auto;
+  gap:9px;
+  padding:12px;
+  border:1px solid #dfece3;
+  background:linear-gradient(155deg,#f1f8f2,#f8fbf8);
+  border-radius:21px;
+}
+.eco-shell .drive-pad-primary .drive-pad-empty{
+  display:block;
+  pointer-events:none;
+  min-height:70px;
+}
+.eco-shell .drive-pad-primary button{
+  min-height:74px!important;
+  height:74px!important;
+  padding:7px 4px!important;
+  border-radius:14px!important;
+  border:1px solid #dce8df!important;
+  background:#fff;
+  color:#15392c;
+  box-shadow:0 2px 3px #132f2207;
+  font-size:11px;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
+}
+.eco-shell .drive-pad-primary button>span:first-child{
+  font-size:27px!important;
+  font-weight:700;
+  line-height:1.02;
+}
+.eco-shell .drive-pad-primary button>span:last-child{
+  max-width:100%;
+  font-size:10px!important;
+  line-height:1.25;
+}
+.eco-shell .drive-pad-primary .drive-stop-button{
+  background:#fff0ee!important;
+  color:#be373b!important;
+  border-color:#f4ceca!important;
+}
+.eco-shell .drive-pad-primary .drive-stop-button svg{width:19px;height:19px}
+.eco-shell .drive-pad-primary .drive-stop-button:hover:not(:disabled){
+  background:#ffdedb!important;
+}
+.eco-shell .drive-pad-primary button[aria-pressed="true"]:not(:disabled){
+  border-color:#12825a!important;
+  background:#19a974!important;
+  color:#fff!important;
+  box-shadow:0 3px 16px #119b6740;
+}
+.eco-shell .drive-diagonal-actions button{
+  min-height:54px;
+  font-size:11px;
+  border-radius:12px;
+}
+.eco-shell .eco-gripper-actions button,
+.eco-shell .eco-follow-up-actions button,
+.eco-shell .eco-wrist-card .grid button,
+.eco-shell .control-tabs button{
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.eco-shell .eco-gripper-actions button:focus-visible,
+.eco-shell .drive-pad button:focus-visible {
+  outline:3px solid #119b67!important;outline-offset:2px;
+}
+.eco-shell .recognition-panel {scrollbar-width:thin;scrollbar-color:#b5d1c2 transparent}
+.eco-shell .control-panel {scrollbar-width:thin;scrollbar-color:#aecbbc #f2f7f2}
+@media(min-width:960px) and (min-height:610px){
+  html,body{height:100%;min-height:0;}
+  .eco-shell{
+    height:100dvh!important;
+    min-height:0!important;
+    max-height:100dvh!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    gap:12px!important;
+    padding:12px 18px 14px!important;
+    position:relative;
+  }
+  .eco-shell .operator-header{
+    flex:0 0 68px!important;
+    height:68px!important;
+    min-height:68px!important;
+    max-height:68px!important;
+  }
+  .eco-shell .operator-workspace{
+    display:grid!important;
+    flex:1 1 0!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:100%!important;
+    overflow:hidden!important;
+    margin:0!important;
+    align-items:stretch!important;
+    grid-template-columns:minmax(0,1.15fr) minmax(400px,.85fr)!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    gap:14px!important;
+  }
+  .eco-shell .vision-column{
+    display:flex!important;
+    flex-direction:column!important;
+    position:relative!important;
+    top:auto!important;
+    height:100%!important;
+    max-height:100%!important;
+    min-height:0!important;
+    align-self:stretch!important;
+    overflow:hidden!important;
+    gap:10px!important;
+    padding:0!important;
+  }
+  .eco-shell .camera-slot{
+    display:block!important;
+    flex:1 1 0!important;
+    position:relative!important;
+    top:auto!important;
+    height:auto!important;
+    max-height:none!important;
+    min-height:230px!important;
+    overflow:hidden;
+    margin:0!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen){
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    position:relative!important;
+    top:auto!important;
+    overflow:hidden!important;
+  }
+  .eco-shell .camera-slot:has(.camera-panel[data-expanded="true"]){overflow:visible!important}
+  .eco-shell .camera-slot .camera-panel[data-expanded="true"]{
+    position:fixed!important;inset:0!important;
+    z-index:110!important;width:100vw!important;height:100dvh!important;
+    max-height:none!important;max-width:none!important;border-radius:0!important;
+  }
+  .eco-shell .camera-slot .camera-panel:fullscreen{
+    width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+  }
+  .eco-shell .camera-slot .camera-viewport{min-height:0!important}
+  .eco-shell .vision-telemetry{
+    flex:0 0 73px!important;
+    min-height:73px!important;
+    max-height:73px!important;
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .eco-shell .vision-telemetry>div{
+    min-height:73px!important;
+    max-height:73px!important;
+    height:73px!important;
+    padding:11px!important;
+  }
+  .eco-shell .vision-telemetry strong{margin-top:12px!important;font-size:14px!important}
+  .eco-shell .recognition-panel{
+    flex:0 0 176px!important;
+    height:176px!important;
+    min-height:0!important;
+    max-height:176px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:13px 15px!important;
+  }
+  .eco-shell .recognition-heading h2{font-size:16px!important}
+  .eco-shell .recognition-heading p{font-size:10px!important;margin-top:4px!important}
+  .eco-shell .recognition-counts{margin-top:10px!important}
+  .eco-shell .recognition-counts>div{min-height:64px!important;padding:10px!important}
+  .eco-shell .recognition-counts>div strong{margin-top:8px!important}
+  .eco-shell .vision-summary{display:none!important}
+  .eco-shell .control-panel{
+    display:flex!important;
+    flex-direction:column!important;
+    position:relative!important;
+    align-self:stretch!important;
+    min-height:0!important;
+    max-height:100%!important;
+    height:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior-y:contain!important;
+    scroll-behavior:smooth;
+    background:white;
+    border-radius:18px!important;
+  }
+  .eco-shell .control-toolbar{
+    position:sticky!important;
+    top:0!important;
+    z-index:45!important;
+    flex:0 0 118px!important;
+    min-height:118px!important;
+    height:118px!important;
+    padding:13px 17px 8px!important;
+    margin:0!important;
+    background:#fff!important;
+    border-bottom:1px solid #ebf0eb;
+    box-shadow:0 3px 10px #07261b08;
+  }
+  .eco-shell .control-toolbar>div:last-child{margin-top:10px!important}
+  .eco-shell .control-tabs{
+    position:sticky!important;
+    top:118px!important;
+    z-index:43!important;
+    order:4!important;
+    margin:0!important;
+    padding:8px 17px!important;
+    gap:7px!important;
+    background:#fff!important;
+    border-bottom:1px solid #e5eee6!important;
+    box-shadow:0 4px 12px #113a2710;
+  }
+  .eco-shell .control-tabs button{
+    min-height:46px!important;
+    height:46px!important;
+    font-size:13px!important;
+  }
+  .eco-shell .controls-scroll{
+    order:5!important;
+    display:block!important;
+    flex:0 0 auto!important;
+    height:auto!important;
+    max-height:none!important;
+    min-height:0!important;
+    overflow:visible!important;
+    padding:16px 17px 24px!important;
+  }
+  .eco-shell .controls-scroll [role="tabpanel"]{scroll-margin-top:176px}
+  .eco-shell .operator-extra{order:9!important}
+  .eco-shell .control-hold-bar{order:1!important}
+  .eco-shell .control-message{order:2!important}
+  .eco-shell .auto-toolbar{order:3!important}
+}
+@media(min-width:960px) and (max-height:720px) and (min-height:610px){
+  .eco-shell .recognition-panel{flex-basis:143px!important;height:143px!important;max-height:143px!important}
+  .eco-shell .vision-telemetry{flex-basis:67px!important;min-height:67px!important;max-height:67px!important}
+  .eco-shell .vision-telemetry>div{min-height:67px!important;max-height:67px!important;height:67px!important}
+  .eco-shell .camera-slot{min-height:210px!important}
+}
+@media(min-width:960px) and (max-height:609px){
+  /* Very short laptop windows keep native scroll and a sticky camera. */
+  .eco-shell .camera-slot{position:sticky!important;top:8px!important}
+}
+@media(min-width:640px) and (max-width:959px){
+  .eco-shell .mode-switch{
+    width:264px!important;
+    max-width:264px!important;
+    left:12px!important;
+    right:auto!important;
+  }
+  .eco-shell .mode-switch button{flex:1 1 50%!important;min-width:0!important}
+}
+@media(max-width:959px){
+  .eco-shell .control-tabs button{font-size:12px!important;min-height:46px!important}
+  .eco-shell .control-tabs .eco-tab-short{display:inline!important}
+  .eco-shell .control-tabs .eco-tab-long{display:none!important}
+}
+@media(max-width:639px) and (orientation:portrait){
+  .eco-shell .control-tabs{
+    position:sticky!important;
+    top:0!important;
+    z-index:37!important;
+    background:#fff!important;
+    margin:9px 0 0!important;
+    padding:8px 13px!important;
+    border-top:1px solid #e5eee6!important;
+    border-bottom:1px solid #e5eee6!important;
+    box-shadow:0 4px 12px #10392710;
+    gap:6px!important;
+  }
+  .eco-shell .control-tabs button{height:46px!important;min-height:46px!important}
+  .eco-shell .drive-pad-primary{max-width:100%;padding:8px;gap:7px;border-radius:17px}
+  .eco-shell .drive-pad-primary button{height:70px!important;min-height:70px!important;border-radius:11px!important}
+  .eco-shell .drive-pad-primary .drive-pad-empty{min-height:70px}
+  .eco-shell .drive-pad-primary button>span:first-child{font-size:24px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .eco-shell .control-panel{scroll-behavior:auto!important}
+  .eco-shell .drive-pad-primary button,
+  .eco-shell .control-tabs button{transition:none!important}
+}

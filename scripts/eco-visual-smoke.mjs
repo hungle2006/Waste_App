@@ -54,11 +54,32 @@ for(const {width,height,targets} of plans){
   }
   console.log("ECO_LAYOUT_RESULT "+JSON.stringify({width,geometry:report.controls,differencesFromFigma:diffs,horizontalOverflow:report.scrollWidth>width+2,assetResults:report.svgAssets,visibleButtons:report.visibleButtons,errors}));
   if(width===1440){
-    await page.evaluate(()=>window.scrollTo(0,600));
-    await page.waitForTimeout(150);
-    const sticky=await page.locator(".camera-slot").evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,position:getComputedStyle(el).position};});
-    console.log("DESKTOP_STICKY_RESULT "+JSON.stringify(sticky));
-    if(sticky.position!=="sticky" || sticky.top<0 || sticky.top>24){failed=true;console.log("FAILED persistent desktop camera")}
+    const initial=await page.evaluate(()=>{
+      const cam=document.querySelector(".camera-slot")?.getBoundingClientRect();
+      const right=document.querySelector(".control-panel");
+      const main=document.querySelector(".operator-workspace");
+      return {cameraTop:cam?.top,cameraBottom:cam?.bottom,pageY:window.scrollY,rightHeight:right?.clientHeight,
+        workspaceOverflow:main?getComputedStyle(main).overflow:null,
+        rightScroll:getComputedStyle(right).overflowY,
+        video:document.querySelectorAll('video[aria-label="Hình ảnh trực tiếp từ camera robot"]').length};
+    });
+    await page.locator(".operator-extra>summary").click();
+    await page.locator(".control-panel").evaluate(el=>{el.scrollTop=el.scrollHeight;});
+    await page.waitForTimeout(320);
+    const after=await page.evaluate(()=>{
+      const cam=document.querySelector(".camera-slot")?.getBoundingClientRect();
+      const right=document.querySelector(".control-panel");
+      return {cameraTop:cam?.top,cameraBottom:cam?.bottom,pageY:window.scrollY,
+        rightScrollTop:right?.scrollTop,rightScrollHeight:right?.scrollHeight,rightClientHeight:right?.clientHeight,
+        video:document.querySelectorAll('video[aria-label="Hình ảnh trực tiếp từ camera robot"]').length};
+    });
+    console.log("DESKTOP_FIXED_MONITOR_RESULT "+JSON.stringify({initial,after}));
+    if(!initial.cameraTop || Math.abs(after.cameraTop-initial.cameraTop)>2 ||
+      Math.abs(after.cameraBottom-initial.cameraBottom)>2 ||
+      after.pageY!==0 || (after.rightScrollTop??0)<20 ||
+      initial.rightScroll!=="auto" || initial.workspaceOverflow!=="hidden" ||
+      after.video!==1){failed=true;console.log("FAILED independent desktop camera/control scrolling")}
+    await page.screenshot({path:"artifacts/eco-ui/waste-desktop-fixed-camera.png",fullPage:false,animations:"disabled"});
   }
   if(width===390){
     // Primary control panel must be immediately after full-size camera, before statistics.
@@ -71,6 +92,10 @@ for(const {width,height,targets} of plans){
     console.log("MOBILE_VIDEO_FIRST "+JSON.stringify(order));
     if(!order.cameraBottom || !order.controlsTop || !order.telemetryTop || Math.abs(order.controlsTop-order.cameraBottom)>23 || order.telemetryTop<=order.controlsTop){failed=true;}
     await page.getByRole("tab",{name:"Bánh xe"}).click();
+    const fiveButtons=await page.locator(".drive-pad-primary button").count();
+    const advancedClosed=!(await page.getByRole("button",{name:"Tiến chéo trái"}).count());
+    console.log("MOBILE_TASK_FIRST_PAD "+JSON.stringify({fiveButtons,advancedClosed}));
+    if(fiveButtons!==5 || !advancedClosed){failed=true;console.log("FAILED main five-button drive pad")}
     const selected=await page.getByRole("tab",{name:"Bánh xe"}).getAttribute("aria-selected");
     if(selected!=="true"){failed=true;console.log("FAILED mobile tab selection")}
     await page.screenshot({path:"artifacts/eco-ui/waste-mobile-drive.png",fullPage:true,animations:"disabled"});
