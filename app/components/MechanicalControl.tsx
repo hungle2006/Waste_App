@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RobotRealtimeClient, type AutoState, type GiftState, type RobotRealtimeState, type TerminalLogEntry } from "@/lib/robot-realtime";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleStop, Grip, Leaf, Link2, PackageOpen, Pause, Radio,
-  Recycle, RotateCcw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2, Volume2 } from "lucide-react";
+import { ArrowDown, ArrowDownLeft, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUp, ArrowUpLeft, ArrowUpRight, Bot, Check, ChevronDown,
+  Gamepad2, Grip, Hand, Leaf, OctagonX, PlugZap, PackageOpen, Pause, Radio,
+  Recycle, RotateCcw, RotateCw, Save, ShieldAlert, SlidersHorizontal, Square, Trash2, Volume2, type LucideIcon } from "lucide-react";
 
 type Joint = "p1" | "p10" | "p11" | "d2";
 type Pose = "SETUP" | "SEARCH" | "PLACE" | "REAR";
 type ControlTab = "arm" | "drive" | "bins" | "auto";
-const CONTROL_TABS: { id: ControlTab; title: string }[] = [
-  { id: "arm", title: "Cánh tay" }, { id: "drive", title: "Bánh xe" },
-  { id: "bins", title: "Thùng & nắp" }, { id: "auto", title: "Auto & lệnh" },
+const CONTROL_TABS: { id: ControlTab; title: string; Icon: LucideIcon }[] = [
+  { id: "arm", title: "Cánh tay", Icon: Hand }, { id: "drive", title: "Bánh xe", Icon: Gamepad2 },
+  { id: "bins", title: "Thùng & nắp", Icon: Recycle }, { id: "auto", title: "Auto & lệnh", Icon: Bot },
 ];
 type Config = {
   limits: Record<string, [number, number]>;
@@ -56,6 +57,11 @@ const DIRECTIONS = [
   ["BACK_LEFT", "Lùi chéo trái", "↙"], ["BACK", "Lùi thẳng", "↓"], ["BACK_RIGHT", "Lùi chéo phải", "↘"],
 ];
 const TURNS = [["TURN_LEFT", "Quay tại chỗ trái", "↶"], ["TURN_RIGHT", "Quay tại chỗ phải", "↷"]];
+const DIRECTION_ICONS: Record<string, LucideIcon> = {
+  "↑": ArrowUp, "↓": ArrowDown, "←": ArrowLeft, "→": ArrowRight,
+  "↖": ArrowUpLeft, "↗": ArrowUpRight, "↙": ArrowDownLeft, "↘": ArrowDownRight,
+  "↶": RotateCcw, "↷": RotateCw
+};
 const ARCS = [["ARC_FORWARD_LEFT", "Tiến cua trái"], ["ARC_FORWARD_RIGHT", "Tiến cua phải"],
   ["ARC_BACK_LEFT", "Lùi cua trái"], ["ARC_BACK_RIGHT", "Lùi cua phải"]];
 const WHEELS = [["M1", "Trước phải", "−"], ["M2", "Sau trái", "−"], ["M3", "Sau phải", "−"], ["M4", "Trước trái", "+"]];
@@ -502,7 +508,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
       : autoState?.auto_running ? "XANH · AUTO đang điều khiển bánh" : "Điều khiển thủ công khi AUTO chưa giữ bánh";
   const acknowledged = (id: string) => hardware.joints?.[id] == null ? "Chưa gửi" : `${hardware.joints[id]} µs`;
   const action = (command: string) => { void mutate({ command }); };
-  const driveButton = (mode: string, title: string, symbol?: string) => <button key={mode} type="button"
+  const driveButton = (mode: string, title: string, symbol?: string) => {
+    const DirectionIcon = symbol ? DIRECTION_ICONS[symbol] : undefined;
+    return <button key={mode} type="button"
     aria-label={title} aria-pressed={driveHeld === mode} disabled={!canDrive}
     onPointerDown={e => { if (e.button !== 0) return; e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); startDrive(mode); }}
     onPointerUp={finishDrive} onPointerCancel={releaseDrive}
@@ -510,8 +518,9 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
     onKeyDown={e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); startDrive(mode); } }}
     onKeyUp={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); finishDrive(); } }} onBlur={releaseDrive}
     className={`btn flex min-h-[60px] touch-none select-none flex-col items-center justify-center gap-1 rounded-xl border px-1 text-center disabled:opacity-35 ${driveHeld === mode ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-slate-50 hover:border-emerald-300"}`}>
-    {symbol && <span aria-hidden="true" className="text-2xl leading-none">{symbol}</span>}<span className="text-[10px] font-semibold">{title}</span>
+    {DirectionIcon && <DirectionIcon aria-hidden="true" className="drive-direction-icon" size={24} strokeWidth={2.25}/>}<span className="drive-direction-label text-[10px] font-semibold">{title}</span>
   </button>;
+  };
 
   const operatorReady = brokerOnline && robot?.fresh && [1,2].includes(autoState?.operator_protocol ?? 0);
   const advancedReady = Boolean(operatorReady && autoState?.operator_protocol === 2);
@@ -538,15 +547,15 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   return <section id="mechanical-control" aria-label="Bảng điều khiển cơ khí" className="control-panel">
     <div className="control-toolbar">
       <div className="flex min-w-0 items-center gap-2">
-        <SlidersHorizontal size={18} className="shrink-0 text-emerald-600"/>
+        <SlidersHorizontal size={18} strokeWidth={2.1} className="shrink-0 text-emerald-600"/>
         <div className="min-w-0"><h2 className="text-sm font-bold">Điều khiển</h2>
           <p className={`text-[11px] ${ready ? "text-emerald-700" : "text-slate-500"}`}>{ready ? "● Arduino đã kết nối" : "○ Chưa kết nối Arduino"}{robot?.simulation ? " · Mô phỏng" : ""}</p>
         </div>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <button aria-label="Kết nối Python" title="Kết nối robot và phát lời chào Samsung trên ứng dụng" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><Link2 size={14}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
+        <button aria-label="Kết nối Python" title="Kết nối robot và phát lời chào Samsung trên ứng dụng" disabled={pending || configured === false || !brokerOnline} onClick={() => void connect()} className="tool-button connect-button"><PlugZap size={16} strokeWidth={2.1}/><span className="connect-label">Kết nối Python</span><span className="connect-short" aria-hidden="true">Kết nối</span></button>
         <button type="button" aria-label="Phát lại lời chào" title="Phát lại lời chào trên thiết bị này" onClick={playWelcome} className="tool-button"><Volume2 size={15}/></button>
-        <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><CircleStop size={16}/></button>
+        <button type="button" aria-label="Dừng cơ khí" title="Dừng cơ khí" onClick={() => void mutate({command:"STOP"},"command",true)} className="tool-button !border-red-200 !bg-red-50 !text-red-700"><OctagonX size={17} strokeWidth={2.1}/></button>
       </div>
     </div>
     <div className="mechanical-safety-note"><strong>AN TOÀN</strong><span>Lệnh cần robot xác nhận</span></div>
@@ -583,7 +592,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           if (event.key === "Home") next = 0;
           if (event.key === "End") next = CONTROL_TABS.length - 1;
           if (next !== undefined) { event.preventDefault(); const id = CONTROL_TABS[next].id; selectTab(id); document.getElementById(`control-tab-${id}`)?.focus(); }
-        }} className={tab === item.id ? "is-selected" : ""} aria-label={item.title}><span className="eco-tab-long">{item.title}</span><span className="eco-tab-short" aria-hidden="true">{item.id === "arm" ? "Gắp" : item.id === "drive" ? "Lái" : item.id === "bins" ? "Thùng" : "AUTO"}</span></button>)}
+        }} className={tab === item.id ? "is-selected" : ""} aria-label={item.title}><item.Icon className="control-tab-icon" size={16} strokeWidth={2.05} aria-hidden="true"/><span className="eco-tab-long">{item.title}</span><span className="eco-tab-short" aria-hidden="true">{item.id === "arm" ? "Gắp" : item.id === "drive" ? "Lái" : item.id === "bins" ? "Thùng" : "AUTO"}</span></button>)}
     </div>
     <div ref={controlsScrollRef} className="controls-scroll" aria-label="Nội dung bảng điều khiển">
       <div role="tabpanel" id="control-panel-arm" aria-labelledby="control-tab-arm" hidden={tab !== "arm"} tabIndex={0}>
@@ -630,7 +639,7 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
           if(!direction)return <span key={`empty-${index}`} className="drive-pad-empty" aria-hidden="true"/>;
           const [mode,title,symbol]=direction;
           return mode==="STOP" ?
-            <button key={mode} aria-label={title} onClick={() => void mutate({command:"XM"}, "command", true)} className="drive-stop-button btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><Square size={16} fill="currentColor"/><span className="text-[10px] font-semibold">Dừng bánh</span></button>
+            <button key={mode} aria-label={title} onClick={() => void mutate({command:"XM"}, "command", true)} className="drive-stop-button btn flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-950 text-white"><OctagonX size={20} strokeWidth={2.1}/><span className="text-[10px] font-semibold">Dừng bánh</span></button>
             : driveButton(mode,title,symbol);
         })}</div>
         <div className="mt-2 grid grid-cols-2 gap-2">{TURNS.map(([mode,title,symbol]) => driveButton(mode,title,symbol))}</div>
