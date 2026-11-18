@@ -6,6 +6,7 @@ import "./operator-v3.css";
 import "./portrait-camera.css";
 import "./operator-split.css";
 import "./operator-polish.css";
+import "./control-rhythm.css";
 export const metadata: Metadata = { title: "Waste Robot | Eco Command Center", description: "Điều khiển robot phân loại rác thông minh và theo dõi camera thời gian thực" };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#102a26" };
 export default function RootLayout({children}:{children:React.ReactNode}) {
