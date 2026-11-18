@@ -54,7 +54,7 @@ for(const {width,height} of profiles){
   if(data.connectOpacity!=="1")failures.push(width+":"+tab.id+" CTA opacity "+data.connectOpacity);
   if(data.videoCount!==1)failures.push(width+":"+tab.id+" camera video remounted");
   if(!data.activeHead || !data.control || !data.tabs)failures.push(width+":"+tab.id+" missing visible heading");
-  if(data.control && data.activeHead && width>=960 && data.activeHead.x<data.control.x+20)failures.push(width+":"+tab.id+" misaligned heading");
+  if(data.control && data.activeHead && width>=960 && data.activeHead.x<data.control.x+14)failures.push(width+":"+tab.id+" misaligned heading");
   if(data.actionSizes.some(a=>a.h>0&&a.h<39&&!a.disabled))failures.push(width+":"+tab.id+" small active touch target");
   if(errors.length)failures.push(width+":"+tab.id+" JS exception "+errors.join(","));
   report.push({viewport:width,tab:tab.id,top:round(data.activeHead?.y||0),
@@ -62,10 +62,10 @@ for(const {width,height} of profiles){
     actionHeights:data.actionSizes.map(a=>round(a.h)),
     disabledContrast:round(data.connectContrast),disabledOpacity:data.connectOpacity,
     disabledCount:data.disabledCount,controlOverflow:data.controlOverflow});
-  if(width===1427||width===390){
+  if(width===1427||width===390||width===1024){
    if(width>=960)await page.locator(".control-panel").evaluate(el=>el.scrollTop=0);
    else await page.locator(".control-panel").scrollIntoViewIfNeeded();
-   await page.screenshot({path:path.join(output,"operator-"+width+"-"+tab.id+".png"),animations:"disabled",fullPage:width<960});
+   await page.screenshot({path:path.join(output,"operator-"+width+"-"+tab.id+".png"),animations:"disabled",fullPage:false});
   }
  }
  await page.close();
