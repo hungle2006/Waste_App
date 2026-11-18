@@ -82,9 +82,8 @@ for(const {width,height,targets} of plans){
       }
     });
     console.log("PORTRAIT_CAMERA_GEOMETRY "+JSON.stringify({width,...portrait}));
-    const panelRatio=portrait.frame?.h/portrait.frame?.w,
-      videoRatio=portrait.surface?.h/portrait.surface?.w;
-    if(!panelRatio || panelRatio<.96 || panelRatio>1.16 ||
+    const videoRatio=portrait.surface?.h/portrait.surface?.w;
+    if(!portrait.frame || !portrait.surface ||
        !videoRatio || videoRatio<1.035 || videoRatio>1.13 ||
        portrait.videoFit!=="contain" || portrait.targetFits!==true || !portrait.giftActionVisible ||
        !portrait.giftIconVisible || !portrait.giftButtonDisabled ||
@@ -93,7 +92,25 @@ for(const {width,height,targets} of plans){
        !portrait.aiHeight || portrait.aiHeight>110) {
       failed=true;console.log("FAILED near-square camera / gift bar / compact telemetry");
     }
-    await page.screenshot({path:"artifacts/eco-ui/waste-portrait-"+width+".png",fullPage:false,animations:"disabled"});
+    const split=await page.evaluate(()=>{
+      const bounds=sel=>document.querySelector(sel)?.getBoundingClientRect();
+      const left=bounds(".vision-column"),right=bounds(".control-panel"),
+        workspace=bounds(".operator-workspace"),tabs=document.querySelectorAll(".control-tabs [role=tab]");
+      return {leftWidth:left?.width,rightWidth:right?.width,
+        leftTop:left?.top,rightTop:right?.top,workspaceWidth:workspace?.width,
+        gap:workspace&&getComputedStyle(document.querySelector(".operator-workspace")).columnGap,
+        columnDifference:left&&right?Math.abs(left.width-right.width):null,
+        visibleTabIcons:[...tabs].filter(tab=>tab.querySelector("svg.control-tab-icon")).length,
+        paneOverflow:document.querySelector(".control-panel")&&getComputedStyle(document.querySelector(".control-panel")).overflowY
+      };
+    });
+    console.log("DESKTOP_EQUAL_SPLIT "+JSON.stringify({width,...split}));
+    if(!split.leftWidth || !split.rightWidth || (split.columnDifference??999)>2 ||
+       Math.abs((split.leftTop??-999)-(split.rightTop??999))>2 ||
+       split.visibleTabIcons!==4 || split.paneOverflow!=="auto"){
+       failed=true;console.log("FAILED 50/50 desktop split or tab icon system");
+    }
+    await page.screenshot({path:"artifacts/eco-ui/waste-split-"+width+".png",fullPage:false,animations:"disabled"});
   }
   if(width<960){
     const shape=await page.evaluate(()=>{
