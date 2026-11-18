@@ -68,6 +68,7 @@ for(const {width,height,targets} of plans){
       const fit=get(".camera-viewport video");
       const action=get(".gift-dispense");
       const icon=get(".gift-emblem");
+      const target=get(".vision-telemetry>div:first-child strong");
       return {
         frame:frame?{w:frame.width,h:frame.height}:null,
         surface:surface?{w:surface.width,h:surface.height}:null,
@@ -76,7 +77,8 @@ for(const {width,height,targets} of plans){
         videoFit:fit?getComputedStyle(fit).objectFit:null,
         giftActionVisible:!!(action&&getComputedStyle(action).display!=="none"),
         giftIconVisible:!!(icon&&getComputedStyle(icon).display!=="none"),
-        giftButtonDisabled:action?.disabled
+        giftButtonDisabled:action?.disabled,
+        targetFits:target?target.scrollWidth<=target.clientWidth+2:null
       }
     });
     console.log("PORTRAIT_CAMERA_GEOMETRY "+JSON.stringify({width,...portrait}));
@@ -84,7 +86,7 @@ for(const {width,height,targets} of plans){
       videoRatio=portrait.surface?.h/portrait.surface?.w;
     if(!panelRatio || panelRatio<.96 || panelRatio>1.16 ||
        !videoRatio || videoRatio<1.035 || videoRatio>1.13 ||
-       portrait.videoFit!=="contain" || !portrait.giftActionVisible ||
+       portrait.videoFit!=="contain" || portrait.targetFits!==true || !portrait.giftActionVisible ||
        !portrait.giftIconVisible || !portrait.giftButtonDisabled ||
        !portrait.gift?.h || portrait.gift.h<45 || portrait.gift.h>55 ||
        !portrait.telemetryHeight || portrait.telemetryHeight>53 ||
