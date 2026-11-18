@@ -294,3 +294,241 @@
   .eco-shell .drive-pad-primary button,
   .eco-shell .control-tabs button{transition:none!important}
 }
+
+
+/* 2026-11-18: Laptop 1427×726 alignment audit.
+   Keep the single LiveKit camera prominent; only robot commands column scrolls.
+   Respect streaming result states and preserve mobile mini-camera. */
+@media (min-width:960px) and (min-height:640px){
+  .eco-shell{
+    padding:10px 14px 12px!important;
+    gap:10px!important;
+  }
+  .eco-shell .operator-header{
+    flex-basis:66px!important;
+    height:66px!important;
+    min-height:66px!important;
+    max-height:66px!important;
+    border-radius:17px!important;
+  }
+  .eco-shell .operator-workspace{
+    gap:12px!important;
+    grid-template-columns:minmax(0,1.13fr) minmax(410px,.87fr)!important;
+  }
+  .eco-shell .vision-column{
+    gap:9px!important;
+    min-width:0!important;
+  }
+  .eco-shell .camera-slot{
+    min-height:240px!important;
+    flex:1 1 0!important;
+  }
+  .eco-shell .camera-slot .camera-panel{
+    border-radius:17px!important;
+  }
+  .eco-shell .camera-heading{
+    height:48px!important;
+    min-height:48px!important;
+    padding:0 15px!important;
+  }
+  .eco-shell .camera-viewport{margin:0 12px!important}
+  .eco-shell .gift-bar{
+    height:41px!important;
+    min-height:41px!important;
+    max-height:41px!important;
+    margin:9px 12px 10px!important;
+  }
+  .eco-shell .vision-telemetry{
+    flex:0 0 66px!important;
+    height:66px!important;
+    min-height:66px!important;
+    max-height:66px!important;
+    gap:9px!important;
+  }
+  .eco-shell .vision-telemetry>div{
+    height:66px!important;
+    min-height:66px!important;
+    max-height:66px!important;
+    padding:10px 11px!important;
+    border-radius:13px!important;
+  }
+  .eco-shell .telemetry-label{
+    color:#597266!important;
+    font-size:10px!important;
+  }
+  .eco-shell .vision-telemetry strong{
+    margin-top:9px!important;
+    font-size:14px!important;
+    line-height:1.25!important;
+  }
+  .eco-shell .recognition-panel{
+    flex:0 0 118px!important;
+    height:118px!important;
+    min-height:118px!important;
+    max-height:118px!important;
+    padding:10px 13px 9px!important;
+    border-radius:15px!important;
+    overflow-x:hidden!important;
+    overflow-y:hidden!important;
+  }
+  .eco-shell .recognition-heading{align-items:center!important;gap:10px!important}
+  .eco-shell .recognition-heading h2{
+    font-size:14px!important;
+    line-height:1.3!important;
+    white-space:nowrap;
+  }
+  .eco-shell .recognition-heading h2 svg{width:16px!important;height:16px!important}
+  .eco-shell .recognition-heading p{display:none!important}
+  .eco-shell .recognition-actions{margin:0!important}
+  .eco-shell .recognition-actions button{
+    height:33px!important;
+    min-height:33px!important;
+    border-radius:9px!important;
+  }
+  .eco-shell .recognition-objects[data-empty="true"],
+  .eco-shell .recognition-sync[data-has-error="false"]{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    overflow:hidden!important;
+    clip-path:inset(50%)!important;
+    white-space:nowrap!important;
+    margin:0!important;
+  }
+  .eco-shell .recognition-counts{
+    margin-top:10px!important;
+    gap:8px!important;
+  }
+  .eco-shell .recognition-counts>div{
+    min-height:51px!important;
+    height:51px!important;
+    border-radius:10px!important;
+    padding:10px 11px!important;
+    gap:0!important;
+  }
+  .eco-shell .recognition-counts>div i{top:12px!important;left:11px!important}
+  .eco-shell .recognition-counts>div span{
+    font-size:10px!important;
+    color:#61796c!important;
+    margin-left:15px!important;
+  }
+  .eco-shell .recognition-counts>div strong{
+    margin-top:6px!important;
+    font-size:14px!important;
+    line-height:1!important;
+  }
+  /* Real detections and errors remain reachable without shrinking the camera. */
+  .eco-shell .recognition-panel[data-has-results="true"],
+  .eco-shell .recognition-panel[data-has-error="true"]{
+    overflow-y:auto!important;
+    scrollbar-width:thin!important;
+  }
+  .eco-shell .recognition-panel[data-has-results="true"] .recognition-objects{
+    display:flex;
+    margin-top:6px!important;
+    max-height:none!important;
+    flex-wrap:wrap;
+  }
+  .eco-shell .recognition-panel[data-has-frame="true"] .recognition-heading p{
+    display:block!important;
+    margin-top:2px!important;
+    font-size:10px!important;
+  }
+  .eco-shell .recognition-panel[data-has-frame="true"] .recognition-counts{
+    margin-top:5px!important;
+  }
+  .eco-shell .control-panel{
+    border-radius:17px!important;
+    scrollbar-width:thin!important;
+    scrollbar-color:#c7ddce transparent!important;
+    scroll-padding-top:164px;
+  }
+  .eco-shell .control-toolbar{
+    flex:0 0 105px!important;
+    height:105px!important;
+    min-height:105px!important;
+    padding:11px 15px 8px!important;
+  }
+  .eco-shell .control-toolbar h2{font-size:18px!important}
+  .eco-shell .control-toolbar>div:first-child>svg{
+    width:32px!important;
+    height:32px!important;
+  }
+  .eco-shell .control-toolbar>div:last-child{
+    margin-top:7px!important;
+    grid-template-columns:minmax(0,1fr) 55px 58px!important;
+    gap:7px!important;
+  }
+  .eco-shell .control-toolbar .tool-button{
+    min-height:43px!important;
+    height:43px!important;
+    border-radius:10px!important;
+  }
+  .eco-shell .control-hold-bar{
+    min-height:37px!important;
+    margin:6px 15px 0!important;
+  }
+  .eco-shell .control-hold-bar>.tool-button{
+    min-height:37px!important;
+    height:37px!important;
+  }
+  .eco-shell .control-message{
+    min-height:30px!important;
+    max-height:38px!important;
+    margin:5px 15px 0!important;
+    padding:7px 10px!important;
+    line-height:1.45!important;
+    color:#597365!important;
+  }
+  .eco-shell .control-tabs{
+    top:105px!important;
+    padding:7px 15px!important;
+    gap:8px!important;
+    box-shadow:0 3px 10px #113a270b!important;
+  }
+  .eco-shell .control-tabs button{
+    min-height:43px!important;
+    height:43px!important;
+    border-radius:10px!important;
+  }
+  .eco-shell .controls-scroll{
+    padding:14px 17px 22px!important;
+  }
+  .eco-shell .drive-pad-primary{
+    max-width:402px!important;
+    padding:10px!important;
+    gap:8px!important;
+    border-radius:18px!important;
+  }
+  .eco-shell .drive-pad-primary button{
+    height:69px!important;
+    min-height:69px!important;
+    border-radius:12px!important;
+  }
+  .eco-shell .drive-pad-primary .drive-pad-empty{
+    min-height:69px!important;
+  }
+  .eco-shell .drive-pad-primary button>span:first-child{font-size:26px!important}
+  .eco-shell .drive-pad-primary button>span:last-child{font-size:11px!important}
+  .eco-shell #control-panel-drive>div:first-child{
+    max-width:540px;
+    margin-inline:auto;
+  }
+  .eco-shell #control-panel-drive>p[role="status"]{
+    max-width:540px;
+    margin-left:auto;
+    margin-right:auto;
+    line-height:1.45;
+  }
+}
+@media (min-width:960px) and (min-height:640px) and (max-width:1120px){
+  .eco-shell .operator-workspace{
+    grid-template-columns:minmax(0,1fr) minmax(410px,.95fr)!important;
+  }
+  .eco-shell .telemetry-label{font-size:9px!important}
+  .eco-shell .recognition-counts>div{padding:9px 7px!important}
+  .eco-shell .recognition-counts>div i{left:7px!important}
+}
+@media (prefers-reduced-motion:reduce){
+  .eco-shell .control-panel{scroll-behavior:auto!important}
+}
