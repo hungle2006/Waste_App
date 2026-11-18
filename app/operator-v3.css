@@ -256,6 +256,15 @@
   /* Very short laptop windows keep native scroll and a sticky camera. */
   .eco-shell .camera-slot{position:sticky!important;top:8px!important}
 }
+@media(min-width:640px) and (max-width:959px){
+  .eco-shell .mode-switch{
+    width:264px!important;
+    max-width:264px!important;
+    left:12px!important;
+    right:auto!important;
+  }
+  .eco-shell .mode-switch button{flex:1 1 50%!important;min-width:0!important}
+}
 @media(max-width:959px){
   .eco-shell .control-tabs button{font-size:12px!important;min-height:46px!important}
   .eco-shell .control-tabs .eco-tab-short{display:inline!important}
