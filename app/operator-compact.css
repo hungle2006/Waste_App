@@ -58,6 +58,7 @@
 }
 .eco-shell .auto-toolbar button{min-height:45px;border-radius:11px}
 .eco-shell .control-tabs{
+  position:relative!important;top:auto!important;
   order:4;
   margin:15px 17px 0;
   padding:0!important;
