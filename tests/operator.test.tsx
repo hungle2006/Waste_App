@@ -449,8 +449,10 @@ describe('Task-first operator controls',()=>{
     expect(pad!.querySelectorAll('button').length).toBe(5);
     expect(screen.getByRole('button',{name:'Tiến thẳng'})).toBeTruthy();
     expect(screen.getByRole('button',{name:'Dừng bánh'})).toBeTruthy();
-    expect(screen.queryByRole('button',{name:'Tiến chéo trái'})).toBeNull();
+    const advanced=screen.getByText('Hướng chéo & tùy chọn nâng cao').closest('details') as HTMLDetailsElement;
+    expect(advanced.open).toBe(false);
     fireEvent.click(screen.getByText('Hướng chéo & tùy chọn nâng cao'));
+    expect(advanced.open).toBe(true);
     expect(screen.getByRole('button',{name:'Tiến chéo trái'})).toBeTruthy();
     expect(screen.getByRole('button',{name:'Lùi chéo phải'})).toBeTruthy();
   });
