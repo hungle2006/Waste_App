@@ -479,3 +479,23 @@
 @media(prefers-reduced-motion:reduce){
   .eco-shell button,.eco-shell summary{transition:none!important;animation:none!important}
 }
+
+
+/* QA finding: at 1427×726 the empty AI grid was 9px taller than its card.
+ * Keep its four badges visible without adding a fake scrollbar. */
+@media(min-width:960px) and (min-height:610px){
+  .eco-shell .recognition-panel[data-has-results="false"] .recognition-counts{
+    margin-top:4px!important;
+  }
+  .eco-shell .recognition-panel[data-has-results="false"] .recognition-counts>div{
+    height:39px!important;
+    min-height:39px!important;
+    padding:6px 10px!important;
+  }
+}
+.eco-shell .control-hold-bar{
+  min-height:52px!important;
+}
+.eco-shell .control-hold-bar .tool-button{
+  height:44px!important;min-height:44px!important;
+}
