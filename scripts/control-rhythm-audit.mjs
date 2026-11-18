@@ -70,7 +70,7 @@ for(const vp of viewports){
  if(geometry.pageOverflow)failures.push(vp.width+" horizontal page overflow");
  if(!dimensionOk)failures.push(vp.width+" inconsistent drive button sizes");
  if(centered>7)failures.push(vp.width+" drive pad/header not centered");
- if(minGap<-.1 || maxGap>42)failures.push(vp.width+" overlapping or widely spaced controls "+JSON.stringify(gaps));
+ if(minGap<-.1 || maxGap>20 || Math.abs(gaps.padTurns-12)>2)failures.push(vp.width+" uneven control rhythm "+JSON.stringify(gaps));
  if(geometry.numberOfLiveVideos!==1)failures.push(vp.width+" duplicate LiveKit player");
  if(!geometry.advancedInitiallyClosed || !geometry.advancedIcon)failures.push(vp.width+" invalid advanced disclosure");
  if(errs.length)failures.push(vp.width+" JS errors "+errs.join(","));
