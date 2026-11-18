@@ -1,0 +1,411 @@
+/*
+ * Waste Robot / Operator rhythm — aligned at a 8 / 12 / 16px scale.
+ * Loaded AFTER the older operator styles so no stale offsets survive.
+ * Visual only: commands, LiveKit, interlocks and 540ms wheel release are untouched.
+ */
+.eco-shell .control-panel{
+  --control-gutter:16px;
+  --control-space:12px;
+  --control-action-h:48px;
+  --control-ring:#168b62;
+  --control-line:#dae8df;
+  --control-soft:#f7faf8;
+  --control-text:#183d30;
+}
+.eco-shell .control-toolbar{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:space-between!important;
+  gap:9px!important;
+  flex-shrink:0!important;
+  padding:13px var(--control-gutter) 11px!important;
+  box-sizing:border-box;
+  border-bottom:1px solid var(--control-line)!important;
+}
+.eco-shell .control-toolbar>div:first-child{
+  display:flex!important;align-items:center!important;
+  gap:10px!important;
+  min-height:30px!important;
+  margin:0!important;
+}
+.eco-shell .control-toolbar>div:first-child>svg{
+  width:35px!important;height:35px!important;
+  padding:8px!important;flex:none;
+  border-radius:10px!important;
+  background:#eaf6ef!important;color:#16784f!important;
+}
+.eco-shell .control-toolbar h2{
+  margin:0!important;line-height:1.12!important;
+  font-size:17px!important;letter-spacing:-.015em!important;
+}
+.eco-shell .operator-connection-label{
+  font-size:11px!important;margin-top:4px!important;
+  line-height:1.25!important;
+}
+.eco-shell .control-toolbar .operator-connection-actions{
+  display:grid!important;flex:none!important;
+  width:100%!important;min-width:0!important;
+  margin:0!important;
+  grid-template-columns:minmax(0,1fr) 46px 46px!important;
+  gap:9px!important;
+  align-items:center!important;
+}
+.eco-shell .operator-connection-actions button{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  height:44px!important;min-height:44px!important;
+  min-width:0!important;padding:0 10px!important;
+  border-radius:11px!important;
+  font-weight:750!important;
+  line-height:1.1!important;
+  transition:background-color .16s ease,box-shadow .16s ease,border-color .16s ease!important;
+}
+.eco-shell .operator-connection-actions .connect-button{gap:7px!important}
+.eco-shell .operator-connection-actions button>svg{
+  width:17px!important;height:17px!important;flex:none;
+}
+.eco-shell .control-hold-bar{
+  display:flex!important;
+  align-items:center!important;justify-content:space-between!important;
+  gap:12px!important;
+  min-height:54px!important;
+  margin:12px var(--control-gutter) 0!important;
+  padding:5px 6px 5px 13px!important;
+  background:var(--control-soft)!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:12px!important;
+}
+.eco-shell .control-hold-bar .hold-caption{
+  flex:1 1 auto;
+  min-width:0!important;
+  font-size:11.5px!important;line-height:1.35!important;
+  color:#465f53!important;
+}
+.eco-shell .control-hold-bar .tool-button{
+  display:inline-flex!important;align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;flex:none!important;
+  height:42px!important;min-height:42px!important;
+  padding:0 12px!important;
+  border-radius:10px!important;
+  font-size:11.5px!important;
+  font-weight:750!important;
+  white-space:nowrap!important;
+}
+.eco-shell .control-hold-bar .tool-button svg{
+  width:16px!important;height:16px!important;
+}
+.eco-shell .control-message{
+  display:flex!important;align-items:center!important;
+  min-height:39px!important;height:auto!important;
+  max-height:64px!important;
+  margin:8px var(--control-gutter) 0!important;
+  padding:8px 12px!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:10px!important;
+  background:#f7faf8!important;
+  color:#446354!important;
+  font-size:11.5px!important;
+  line-height:1.4!important;
+  overflow-wrap:anywhere!important;
+  overflow:hidden!important;
+}
+.eco-shell .control-tabs{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  gap:9px!important;
+  padding:9px var(--control-gutter) 11px!important;
+  margin:10px 0 0!important;
+  background:#fff!important;
+  border-bottom:1px solid var(--control-line)!important;
+}
+.eco-shell .control-tabs button{
+  display:inline-flex!important;
+  align-items:center!important;justify-content:center!important;
+  gap:7px!important;
+  min-width:0!important;
+  min-height:48px!important;height:48px!important;
+  padding:0 9px!important;
+  border-radius:11px!important;
+  font-size:12px!important;
+  font-weight:750!important;
+  line-height:1.1!important;
+  white-space:nowrap!important;
+}
+.eco-shell .control-tabs button .control-tab-icon{
+  width:17px!important;height:17px!important;flex-shrink:0!important;
+}
+.eco-shell .controls-scroll{
+  padding:17px var(--control-gutter) 22px!important;
+  box-sizing:border-box;
+}
+.eco-shell #control-panel-drive:not([hidden]){
+  display:flex!important;
+  flex-direction:column!important;
+  gap:12px!important;
+  align-items:stretch!important;
+  min-width:0!important;
+}
+.eco-shell #control-panel-drive .drive-header{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:14px!important;
+  width:100%!important;
+  max-width:440px!important;
+  margin:0 auto!important;
+  padding:0 2px!important;
+}
+.eco-shell #control-panel-drive .drive-header-copy{
+  display:flex!important;flex-direction:column!important;
+  align-items:flex-start!important;min-width:0!important;
+  gap:5px!important;
+}
+.eco-shell #control-panel-drive .drive-header .control-section-title{
+  font-size:15px!important;font-weight:800!important;
+  line-height:1.2!important;
+  margin:0!important;
+  gap:8px!important;
+}
+.eco-shell #control-panel-drive .drive-header .control-section-title svg{
+  width:18px!important;height:18px!important;flex:none!important;
+}
+.eco-shell #control-panel-drive .drive-header-copy>p{
+  margin:0!important;
+  font-size:11px!important;line-height:1.35!important;
+  color:#587065!important;
+}
+.eco-shell #control-panel-drive .drive-speed{
+  display:inline-flex!important;align-items:center!important;
+  justify-content:flex-end!important;gap:9px!important;
+  flex-shrink:0!important;
+  color:#496454!important;
+  font-size:11.5px!important;
+  font-weight:650!important;
+  white-space:nowrap!important;
+}
+.eco-shell #control-panel-drive .drive-speed input{
+  width:66px!important;height:44px!important;min-height:44px!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:11px!important;
+  background:white!important;
+  color:#13764c!important;
+  text-align:center!important;
+  font-size:14px!important;font-weight:800!important;
+  box-shadow:none!important;
+}
+.eco-shell #control-panel-drive .drive-speed input:focus-visible{
+  outline:3px solid #a5dcc0!important;outline-offset:1px!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  width:100%!important;
+  max-width:420px!important;
+  margin:0 auto!important;
+  padding:12px!important;
+  gap:9px!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:18px!important;
+  background:#f5faf6!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary>button,
+.eco-shell #control-panel-drive .drive-pad-primary>.drive-pad-empty{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:76px!important;min-height:76px!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary>button{
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;
+  gap:7px!important;
+  margin:0!important;
+  padding:7px 5px!important;
+  border-radius:12px!important;
+  border:1px solid #dce7df!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary>button svg{
+  width:24px!important;height:24px!important;flex-shrink:0!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary .drive-direction-label,
+.eco-shell #control-panel-drive .drive-pad-primary button>span{
+  font-size:11px!important;font-weight:750!important;
+  line-height:1.2!important;text-align:center!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary .drive-stop-button:not(:disabled){
+  background:#fff0ef!important;color:#bf3238!important;
+  border-color:#f2c8c5!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary .drive-stop-button:not(:disabled) svg{
+  color:inherit!important;
+}
+.eco-shell #control-panel-drive .drive-pad-primary .drive-pad-empty{
+  visibility:hidden!important;pointer-events:none!important;
+}
+.eco-shell #control-panel-drive .drive-turn-actions{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  width:100%!important;max-width:420px!important;
+  gap:9px!important;
+  margin:0 auto!important;
+}
+.eco-shell #control-panel-drive .drive-turn-actions button{
+  display:flex!important;flex-direction:row!important;
+  gap:8px!important;align-items:center!important;justify-content:center!important;
+  height:50px!important;min-height:50px!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:11px!important;
+  background:#f8faf8!important;
+  font-size:11px!important;font-weight:730!important;
+  white-space:nowrap!important;
+}
+.eco-shell #control-panel-drive .drive-turn-actions button svg{
+  width:18px!important;height:18px!important;flex:none!important;
+}
+.eco-shell #control-panel-drive .drive-feedback{
+  box-sizing:border-box!important;
+  width:100%!important;max-width:440px!important;
+  margin:0 auto!important;
+  padding:9px 11px!important;
+  border-radius:10px!important;
+  background:#fff8ed!important;border:1px solid #f4dfbe!important;
+  color:#93551e!important;
+  font-size:11.5px!important;
+  line-height:1.35!important;
+  text-align:left!important;
+  overflow-wrap:anywhere!important;
+}
+.eco-shell #control-panel-drive .drive-feedback.text-emerald-700{
+  background:#eff9f3!important;border-color:#c6e7d1!important;color:#176242!important;
+}
+.eco-shell #control-panel-drive .drive-advanced{
+  box-sizing:border-box!important;
+  width:100%!important;max-width:440px!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:1px solid var(--control-line)!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  overflow:hidden!important;
+}
+.eco-shell #control-panel-drive .drive-advanced>summary{
+  display:flex!important;align-items:center!important;
+  gap:9px!important;
+  height:48px!important;min-height:48px!important;
+  margin:0!important;
+  padding:0 13px!important;
+  background:#f5f9f6!important;
+  color:var(--control-text)!important;
+  border-bottom:1px solid transparent!important;
+  font-size:12px!important;font-weight:750!important;
+  line-height:1.25!important;
+  list-style:none!important;
+  cursor:pointer!important;
+}
+.eco-shell #control-panel-drive .drive-advanced>summary::-webkit-details-marker{display:none}
+.eco-shell #control-panel-drive .drive-advanced>summary>svg:first-child{
+  width:17px!important;height:17px!important;color:#16875b!important;flex:none;
+}
+.eco-shell #control-panel-drive .drive-advanced>summary>span{flex:1;min-width:0}
+.eco-shell #control-panel-drive .drive-advanced>summary .drive-advanced-chevron{
+  width:17px!important;height:17px!important;
+  flex:none;color:#527368!important;
+  transition:transform .16s ease;
+}
+.eco-shell #control-panel-drive .drive-advanced[open]>summary{
+  border-bottom-color:var(--control-line)!important;
+}
+.eco-shell #control-panel-drive .drive-advanced[open]>summary .drive-advanced-chevron{
+  transform:rotate(180deg);
+}
+.eco-shell #control-panel-drive .drive-advanced>div{
+  margin:12px!important;
+}
+.eco-shell #control-panel-drive .drive-advanced .drive-diagonal-actions,
+.eco-shell #control-panel-drive .drive-advanced-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+.eco-shell #control-panel-drive .drive-advanced button{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:8px!important;
+  min-width:0!important;
+  height:54px!important;min-height:54px!important;
+  padding:8px 9px!important;
+  border-radius:10px!important;
+  white-space:normal!important;
+  font-size:11px!important;line-height:1.25!important;
+}
+.eco-shell #control-panel-drive .drive-advanced button svg{
+  width:17px!important;height:17px!important;flex:none;
+}
+.eco-shell #control-panel-drive .drive-advanced>p,
+.eco-shell #control-panel-drive .drive-advanced p{
+  padding:0 12px 12px!important;
+  margin:0!important;
+  color:#5a7265!important;
+  font-size:11px!important;
+  line-height:1.4!important;
+}
+/* The rest of the device tabs use the same action geometry. */
+.eco-shell #control-panel-arm button:not(.tool-button),
+.eco-shell #control-panel-bins button,
+.eco-shell #control-panel-auto button{
+  border-radius:11px!important;
+}
+.eco-shell .control-tabs button:focus-visible,
+.eco-shell #control-panel-drive button:focus-visible,
+.eco-shell #control-panel-drive summary:focus-visible{
+  outline:3px solid var(--control-ring)!important;
+  outline-offset:2px!important;
+}
+@media(min-width:960px) and (min-height:610px){
+  .eco-shell .control-toolbar{
+    height:112px!important;min-height:112px!important;flex-basis:112px!important;
+  }
+  .eco-shell .control-tabs{
+    top:112px!important;
+    order:4!important;
+  }
+  .eco-shell .control-hold-bar{order:1!important}
+  .eco-shell .control-message{order:2!important}
+  .eco-shell .auto-toolbar{order:3!important}
+  .eco-shell .controls-scroll{order:5!important}
+}
+@media(max-width:959px){
+  .eco-shell .control-toolbar{height:auto!important;min-height:110px!important}
+  .eco-shell .control-tabs{gap:7px!important}
+  .eco-shell #control-panel-drive .drive-header{max-width:440px!important}
+}
+@media(max-width:640px){
+  .eco-shell .control-panel{--control-gutter:13px}
+  .eco-shell .control-toolbar{padding:13px 13px 11px!important}
+  .eco-shell .control-tabs{padding:9px 13px 11px!important}
+  .eco-shell .controls-scroll{padding:15px 13px 19px!important}
+  .eco-shell #control-panel-drive .drive-header{gap:9px!important}
+  .eco-shell #control-panel-drive .drive-header-copy>p{font-size:10.5px!important}
+  .eco-shell #control-panel-drive .drive-speed{gap:6px!important;font-size:11px!important}
+  .eco-shell #control-panel-drive .drive-speed input{width:58px!important;height:42px!important;min-height:42px!important}
+  .eco-shell #control-panel-drive .drive-pad-primary{padding:10px!important;gap:8px!important}
+  .eco-shell #control-panel-drive .drive-pad-primary>button,
+  .eco-shell #control-panel-drive .drive-pad-primary>.drive-pad-empty{height:70px!important;min-height:70px!important}
+  .eco-shell #control-panel-drive .drive-pad-primary>button svg{width:22px!important;height:22px!important}
+  .eco-shell #control-panel-drive .drive-turn-actions{gap:8px!important}
+  .eco-shell #control-panel-drive .drive-advanced>summary{font-size:11.5px!important}
+  .eco-shell #control-panel-drive .drive-advanced button{font-size:10.5px!important}
+}
+@media(max-width:375px){
+  .eco-shell #control-panel-drive .drive-header{
+    grid-template-columns:minmax(0,1fr) auto!important;
+  }
+  .eco-shell #control-panel-drive .drive-header-copy>p{max-width:188px!important}
+  .eco-shell #control-panel-drive .drive-turn-actions button{font-size:10.5px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .eco-shell #control-panel-drive .drive-advanced-chevron{transition:none!important}
+  .eco-shell #control-panel-drive button{transition:none!important}
+}
