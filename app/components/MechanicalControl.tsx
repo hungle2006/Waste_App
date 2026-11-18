@@ -527,7 +527,12 @@ export default function MechanicalControl({ active, autoMode = false, onRobotSta
   const selectTab = (next: ControlTab) => {
     releaseDrive();
     setTab(next);
-    controlsScrollRef.current?.scrollTo?.({ top: 0 });
+    const content = controlsScrollRef.current;
+    content?.scrollTo?.({ top: 0 });
+    // Desktop uses its own scrolling control column; reset that column too.
+    const panel = content?.closest(".control-panel");
+    if (panel && panel.scrollHeight > panel.clientHeight)
+      panel.scrollTo?.({ top: 0, behavior: "instant" });
   };
   if (!active) return null;
   return <section id="mechanical-control" aria-label="Bảng điều khiển cơ khí" className="control-panel">
