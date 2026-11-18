@@ -1,0 +1,257 @@
+/* Waste Robot / Split Operator Desktop V4
+ * Two equal work zones. One LiveKit video stays mounted; the controls scroll on the right.
+ * Loaded after portrait-camera.css to supersede the old ~34% left-column layout.
+ */
+.eco-shell button svg,
+.eco-shell .control-section-title svg,
+.eco-shell .camera-heading svg{
+  flex-shrink:0;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.eco-shell .control-tabs button{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  gap:9px!important;
+  letter-spacing:0!important;
+}
+.eco-shell .control-tab-icon{
+  display:block;
+  flex:0 0 auto;
+  opacity:.88;
+}
+.eco-shell .control-tabs button.is-selected .control-tab-icon{opacity:1}
+.eco-shell .drive-pad-primary button{
+  gap:7px!important;
+  background:#fff!important;
+}
+.eco-shell .drive-pad-primary .drive-direction-icon{
+  display:block;
+  width:25px!important;height:25px!important;
+  margin:0!important;
+  flex-shrink:0;
+  color:#174e3b;
+}
+.eco-shell .drive-pad-primary .drive-direction-label{
+  font-size:11px!important;line-height:1.1!important;
+}
+.eco-shell .drive-pad-primary button[aria-pressed="true"] .drive-direction-icon{color:white}
+.eco-shell .drive-diagonal-actions button .drive-direction-icon{
+  width:18px;height:18px;
+}
+.eco-shell .emergency-button svg,
+.eco-shell .gift-stop svg,
+.eco-shell .drive-stop-button svg{
+  color:currentColor;
+}
+.eco-shell .camera-icon-button,
+.eco-shell .camera-jump-button,
+.eco-shell .tool-button,
+.eco-shell .control-tabs button,
+.eco-shell .drive-pad button,
+.eco-shell .eco-gripper-actions button{
+  transition:background-color .17s ease,border-color .17s ease,color .17s ease,box-shadow .17s ease,transform .17s ease;
+}
+.eco-shell .camera-icon-button:focus-visible,
+.eco-shell .tool-button:focus-visible,
+.eco-shell .control-tabs button:focus-visible,
+.eco-shell .drive-pad button:focus-visible{
+  outline:3px solid #29a873!important;
+  outline-offset:2px;
+}
+@media(min-width:960px) and (min-height:610px){
+  html,body{height:100%;overflow:hidden}
+  .eco-shell{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;max-width:1770px!important;
+    height:100dvh!important;max-height:100dvh!important;
+    min-height:0!important;overflow:hidden!important;
+    gap:12px!important;
+    padding:12px clamp(12px,1.45vw,24px) 14px!important;
+    margin:0 auto!important;
+  }
+  .eco-shell .operator-header{
+    flex:0 0 68px!important;
+    height:68px!important;min-height:68px!important;max-height:68px!important;
+    border-radius:17px!important;
+  }
+  .eco-shell .operator-workspace{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    flex:1 1 0!important;
+    height:auto!important;min-height:0!important;max-height:none!important;
+    margin:0!important;
+    overflow:hidden!important;
+    gap:14px!important;
+    align-items:stretch!important;
+  }
+  .eco-shell .vision-column{
+    display:flex!important;flex-direction:column!important;
+    width:100%!important;min-width:0!important;
+    height:100%!important;min-height:0!important;max-height:100%!important;
+    flex:none!important;align-self:stretch!important;
+    gap:9px!important;overflow:hidden!important;
+    padding:0!important;position:relative!important;
+    top:auto!important;
+  }
+  .eco-shell .camera-slot{
+    display:block!important;
+    position:relative!important;top:auto!important;
+    width:100%!important;min-width:0!important;
+    flex:1 1 0!important;height:auto!important;
+    min-height:240px!important;max-height:none!important;
+    border-radius:18px!important;overflow:hidden!important;
+    aspect-ratio:auto!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen){
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:45px minmax(0,1fr) 61px!important;
+    width:100%!important;height:100%!important;
+    min-height:0!important;max-height:none!important;
+    margin:0!important;position:relative!important;
+    top:auto!important;
+    border-radius:18px!important;overflow:hidden!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen) .camera-heading{
+    grid-row:1;
+    height:45px!important;min-height:45px!important;
+    padding:0 14px!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen) .camera-viewport{
+    grid-row:2;
+    align-self:center!important;justify-self:center!important;
+    width:auto!important;height:calc(100% - 10px)!important;
+    max-width:calc(100% - 24px)!important;
+    min-height:0!important;
+    aspect-ratio:1 / 1.08!important;
+    margin:0!important;
+    border-radius:13px!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen) .camera-viewport video{
+    width:100%!important;height:100%!important;object-fit:contain!important;
+  }
+  .eco-shell .camera-slot .camera-panel:not([data-expanded="true"]):not(:fullscreen) .gift-bar{
+    grid-row:3;align-self:center!important;
+    width:calc(100% - 24px)!important;
+    height:50px!important;min-height:50px!important;max-height:50px!important;
+    margin:0 12px 8px!important;
+  }
+  .eco-shell .vision-telemetry{
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    flex:0 0 50px!important;
+    height:50px!important;min-height:50px!important;max-height:50px!important;
+    gap:8px!important;padding:0!important;
+  }
+  .eco-shell .vision-telemetry>div{
+    height:50px!important;min-height:50px!important;max-height:50px!important;
+    padding:6px 10px!important;border-radius:12px!important;
+  }
+  .eco-shell .vision-telemetry strong{
+    margin-top:5px!important;font-size:13px!important;
+    overflow:hidden!important;text-overflow:ellipsis!important;
+  }
+  .eco-shell .vision-telemetry>div:first-child strong{
+    font-size:11px!important;
+  }
+  .eco-shell .recognition-panel{
+    flex:0 0 101px!important;height:101px!important;min-height:101px!important;max-height:101px!important;
+    padding:10px 13px!important;
+    border-radius:15px!important;
+    overflow-x:hidden!important;overflow-y:hidden!important;
+  }
+  .eco-shell .recognition-panel[data-has-results="true"],
+  .eco-shell .recognition-panel[data-has-error="true"]{overflow-y:auto!important}
+  .eco-shell .recognition-heading h2{font-size:14px!important}
+  .eco-shell .recognition-counts{margin-top:9px!important}
+  .eco-shell .recognition-counts>div{
+    min-height:45px!important;height:45px!important;
+    border-radius:10px!important;padding:8px 10px!important;
+  }
+  .eco-shell .recognition-counts>div strong{font-size:13px!important;margin-top:4px!important}
+  .eco-shell .vision-summary{display:none!important}
+  .eco-shell .control-panel{
+    display:flex!important;flex-direction:column!important;
+    position:relative!important;
+    min-width:0!important;width:100%!important;
+    height:100%!important;min-height:0!important;max-height:100%!important;
+    align-self:stretch!important;
+    border-radius:18px!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+    overscroll-behavior-y:contain!important;
+    background:#fff!important;
+    scrollbar-width:thin;scrollbar-color:#bed5c7 transparent;
+  }
+  .eco-shell .control-toolbar{
+    position:sticky!important;top:0!important;z-index:48!important;
+    flex:0 0 106px!important;height:106px!important;min-height:106px!important;
+    padding:13px 17px 9px!important;
+    background:#fff!important;
+    border-bottom:1px solid #e5efe8!important;
+  }
+  .eco-shell .control-toolbar>div:last-child{
+    margin-top:10px!important;
+    grid-template-columns:minmax(0,1fr) 58px 58px!important;
+    gap:8px!important;
+  }
+  .eco-shell .control-toolbar .tool-button{min-height:44px!important;height:44px!important}
+  .eco-shell .control-tabs{
+    position:sticky!important;top:106px!important;z-index:47!important;
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    order:4!important;
+    margin:0!important;padding:8px 16px!important;
+    gap:8px!important;
+    background:#fff!important;
+    box-shadow:0 4px 14px #0e30260c!important;
+    border-bottom:1px solid #e6efe9!important;
+  }
+  .eco-shell .control-tabs button{
+    height:46px!important;min-height:46px!important;
+    border-radius:11px!important;
+    padding:0 8px!important;
+    font-size:13px!important;
+  }
+  .eco-shell .controls-scroll{
+    flex:0 0 auto!important;height:auto!important;min-height:0!important;max-height:none!important;
+    overflow:visible!important;
+    padding:17px 18px 24px!important;
+  }
+  .eco-shell .controls-scroll>div[role="tabpanel"]{
+    width:100%;max-width:590px;
+    margin-inline:auto;
+  }
+  .eco-shell .drive-pad-primary{max-width:410px!important}
+  .eco-shell .drive-pad-primary button{height:78px!important;min-height:78px!important}
+  .eco-shell .drive-pad-primary .drive-pad-empty{min-height:78px!important}
+  .eco-shell .eco-gripper-actions button{min-height:52px!important}
+  .eco-shell .eco-follow-up-actions button{min-height:48px!important}
+  .eco-shell .control-hold-bar{order:1!important}
+  .eco-shell .control-message{order:2!important}
+  .eco-shell .auto-toolbar{order:3!important}
+  .eco-shell .operator-extra{order:9!important}
+}
+@media(min-width:960px) and (min-height:610px) and (max-height:705px){
+  .eco-shell .vision-column{gap:7px!important}
+  .eco-shell .vision-telemetry{height:46px!important;min-height:46px!important;max-height:46px!important;flex-basis:46px!important}
+  .eco-shell .vision-telemetry>div{height:46px!important;min-height:46px!important;max-height:46px!important}
+  .eco-shell .recognition-panel{height:91px!important;min-height:91px!important;max-height:91px!important;flex-basis:91px!important}
+  .eco-shell .camera-slot{min-height:210px!important}
+}
+@media(min-width:960px) and (max-width:1130px){
+  .eco-shell .control-tabs button{font-size:11px!important;gap:5px!important}
+  .eco-shell .control-tab-icon{width:15px;height:15px}
+  .eco-shell .control-toolbar>div:last-child{grid-template-columns:minmax(0,1fr) 48px 48px!important}
+  .eco-shell .vision-telemetry>div{padding:6px 7px!important}
+  .eco-shell .telemetry-label{font-size:9px!important}
+}
+@media(max-width:959px){
+  .eco-shell .control-tab-icon{width:16px;height:16px}
+  .eco-shell .control-tabs button{gap:6px!important}
+}
+@media(max-width:400px){
+  .eco-shell .control-tab-icon{width:15px;height:15px}
+  .eco-shell .control-tabs button{gap:3px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .eco-shell .control-panel,.eco-shell button{scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
